@@ -1,0 +1,217 @@
+#! /usr/bin/env bash
+
+#
+# Show and share clipboard content.
+#
+# The script shows clipboard content using Clipit clipboard manager. It uses
+# Python module for QR code creation in order to share the content of the
+# clipboard buffer with external devices and a notification client to
+# display the content on screen.
+#
+# Author:     Riccardo Finotello
+# E-mail:     riccardo.finotello@gmail.com
+#
+# Copyright:  Riccardo Finotello and Alessandra Cappati- 2019
+# License:    MIT License
+#
+
+# Show usage
+function show_usage() {
+  USAGE="$(basename $0) [-h] [-c BUF] [-n BUF] [-q BUF]"
+  printf "\n%s\n%s\n" "Usage:" "    $USAGE"
+}
+
+# Show help
+function show_help() {
+  show_usage
+
+  printf "\n%s\n\n" "Show and share clipboard content."
+  printf "%s\n" "OPTIONS:"
+  printf "%s\n" "    -h               Show this help and exit"
+  printf "%s\n" "    -c BUF           Select clipboard buffer BUF"
+  printf "%s\n" "    -n BUF           Send a notification showing buffer BUF"
+  printf "%s\n" "    -q BUF           Generates QR code from buffer BUF"
+  printf "\n%s\n" "BUF:"
+  printf "%s\n" "    p or primary     Show the primary buffer (middle mouse click)"
+  printf "%s\n" "    c or clipboard   Show the clipboard buffer (ctrl+v)"
+
+  printf "\n%s\n%s\n\n" \
+    "For bug report and info: riccardo.finotello@gmail.com" \
+    "Copyright (c) 2019 - Riccardo Finotello - MIT License"
+}
+
+# Check if the clipboard manager is installed
+if [[ ! -z $(which clipit) ]]; then
+  CLIPBOARD=$(which clipit)
+else
+  printf "%s\n%s\n%s\n" \
+    "The clipboard manager is not in the PATH." \
+    "You might have to install it. E.g.: sudo apt install clipit." \
+    "The clipboard manager is required for this script to run."
+  exit 1
+fi
+
+# Check if the Python module to generate QR codes is installed
+if [[ ! -z $(which qr) ]]; then
+  QR=$(which qr)
+else
+  printf "%s\n%s\n%s\n" \
+    "The QR code generator is not in the PATH." \
+    "You might have to install it. E.g.: sudo apt install python-qrenconde." \
+    "Some of the functionalities of this script may be compromised otherwise."
+fi
+
+# Check if the notification client is installed
+if [[ ! -z $(which notify-send) ]]; then
+  NOTIFICATIONS=$(which notify-send)
+else
+  printf "%s\n%s\n%s\n" \
+    "The notification client is not in the PATH." \
+    "You might have to install it. E.g.: sudo apt install ruby-notify." \
+    "Some of the functionalities of this script may be compromised otherwise."
+fi
+
+# Show clipboard content
+function show_clipboard() {
+  case $1 in
+    p|primary)
+      printf "%s\n" "$($CLIPBOARD -p)"
+      ;;
+    c|clipboard)
+      printf "%s\n" "$($CLIPBOARD -c)"
+      ;;
+    *)
+      printf "%s\n" "Wrong BUF type: $1 is not a good BUF."
+      show_usage
+      exit 1
+      ;;
+  esac
+}
+
+# Show a notification including the content of the clipboard (${arg:0:1} takes
+# only the initial letter of $arg and ${1^} switches the case of the first
+# character)
+function send_notification() {
+  ARG=${1:0:1}
+
+  if [[ -f /usr/share/icons/gnome/48x48/actions/edit-paste.png ]]; then
+    NOTIFICATIONS="$NOTIFICATIONS -i \
+      /usr/share/icons/gnome/48x48/actions/edit-paste.png"
+  fi
+
+  case $ARG in
+    p)
+      TITLE="Primary buffer"
+      ;;
+    c)
+      TITLE="Clipboard buffer"
+      ;;
+    *)
+      printf "%s\n" \
+        "Internal error: parsed wrong argument."
+      exit 1
+      ;;
+  esac
+
+  $NOTIFICATIONS "$TITLE" "$(show_clipboard $ARG)"
+}
+
+function show_notification() {
+  case $1 in
+    p|primary|c|clipboard)
+      show_clipboard $1
+      send_notification $1
+      ;;
+    *)
+      printf "%s\n" "Wrong BUF type: $1 is not a good BUF."
+      show_usage
+      exit 1
+      ;;
+  esac
+}
+
+# Create the QR code (${arg:0:1} takes only the initial letter of $arg)
+function choose_img_viewer() {
+  ARG=${1:0:1}
+
+  if [[ ! -z $DISPLAY ]]; then
+    if [[ ! -z $(which feh) ]]; then
+      $CLIPBOARD -$ARG | $QR | $(which feh) -Z -
+    elif [[ ! -z $(which sxiv ) ]]; then
+      TMPFILE="/tmp/qr_$(date +"%N").png"
+      $CLIPBOARD -$ARG | $QR > $TMPFILE
+      $(which sxiv) $TMPFILE
+    else
+      $CLIPBOARD -$ARG | $QR
+    fi
+  else
+    $CLIPBOARD -$ARG | $QR
+  fi
+}
+
+function show_qr() {
+  case $1 in
+    p|primary|c|clipboard)
+      show_clipboard $1
+      choose_img_viewer $1
+      ;;
+    *)
+      printf "%s\n" "Wrong BUF type: $1 is not a good BUF."
+      show_usage
+      exit 1
+      ;;
+  esac
+}
+
+# Parse options
+while getopts ":hc:n:q:" opt; do
+  case $opt in
+    h)
+      show_help
+      exit 0
+      ;;
+    c)
+      show_clipboard $OPTARG
+      exit 0
+      ;;
+    n)
+      if [[ ! -z $NOTIFICATIONS ]] && [[ ! -z $DISPLAY ]]; then
+        show_notification $OPTARG
+        exit 0
+      else
+        printf "%s\n" \
+          "It is impossible to show notifications at this time."
+        exit 1
+      fi
+      ;;
+    q)
+      if [[ ! -z $QR ]]; then
+        show_qr $OPTARG
+        exit 0
+      else
+        printf "%s\n" \
+          "It is impossible to encode a QR code at this time."
+        exit 1
+      fi
+      ;;
+    \?)
+      printf "%s\n" "Invalid option: -$OPTARG is not an option." >&2
+      show_usage
+      exit 1
+      ;;
+    :)
+      printf "%s\n" "Missing argument: -$OPTARG requires an argument." >&2
+      show_usage
+      exit 1
+      ;;
+    *)
+      show_help
+      exit 1
+      ;;
+  esac
+done
+
+if [[ -z $1 ]]; then
+  show_help
+  exit 1
+fi

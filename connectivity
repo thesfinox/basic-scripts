@@ -1,0 +1,164 @@
+#! /usr/bin/env bash
+
+#
+# Toggle Wifi/Ethernet on and off.
+#
+# The script toggles the connection capabilities on and off. It uses
+# NetworkManager in order to get the current status of the interfaces and to
+# toggle on and off both Wifi and Ethernet connection.
+#
+# Author:     Riccardo Finotello
+# E-mail:     riccardo.finotello@gmail.com
+#
+# Copyright:  Riccardo Finotello - 2019
+# License:    MIT License
+#
+
+# ------------------------------------
+# OPTIONS, HELP, USAGE AND CHECKS
+# ------------------------------------
+
+# Show usage
+function show_usage() {
+  USAGE="$(basename $0) [-h] COMMAND"
+  printf "\n%s\n%s\n" "Usage:" "    $USAGE"
+}
+
+# Show help
+function show_help() {
+  show_usage
+
+  printf "\n%s\n\n" "Toggle Wifi/Ethernet on and off."
+  printf "%s\n" "OPTIONS:"
+  printf "%s\n" "    -h         Show this help and exit"
+  printf "\n%s\n" "COMMAND:"
+  printf "%s\n" "    current    Show currently connected interface(s)"
+  printf "%s\n" "    ip         Show the IP address for the currently connected interface(s)"
+
+  printf "\n%s\n%s\n\n" \
+    "For bug report and info: riccardo.finotello@gmail.com" \
+    "Copyright (c) 2019 - Riccardo Finotello - MIT License"
+}
+
+# Check if NetworkManager is installed
+if [[ ! -z $(which nmcli) ]]; then
+  NMCLI=$(which nmcli)
+else
+  printf "%s\n%s\n%s\n" \
+    "The NetworkManager command line interface is not in the PATH." \
+    "You might have to install it. E.g.: sudo apt install network-manager." \
+    "The NetworkManager CLI is required for this script to run."
+  exit 1
+fi
+
+# Parse options
+while getopts ":h" opt; do
+  case $opt in
+    h)
+      show_help
+      exit 0
+      ;;
+    \?)
+      printf "%s\n" "Invalid option: -$OPTARG." >&2
+      show_usage
+      exit 1
+      ;;
+    :)
+      printf "%s\n" "-$OPTARG requires an argument." >&2
+      show_usage
+      exit 1
+      ;;
+  esac
+done
+
+# ------------------------------------
+# COMMANDS AND INFO
+# ------------------------------------
+
+if [[ -z $1 ]]; then
+  show_help
+  exit 1
+fi
+
+# Show currently connected interface(s)
+function get_wifi_info() {
+  WIFIINFO=$($NMCLI -f IN-USE,SSID,SIGNAL -t dev wifi)
+  WIFINAME=$(printf "%s\n" "$WIFIINFO"| awk -F ':' '/^[*]/ {print $2}')
+  WIFISIGNAL=$(printf "%s\n" "$WIFIINFO"| awk -F ':' '/^[*]/ {print $3}')
+
+  printf "%s (%s%%)\n" "$WIFINAME" "$WIFISIGNAL"
+}
+
+function show_current() {
+  # Connected interfaces
+  INTERFACES=$($NMCLI -f DEVICE,TYPE,STATE dev status | \
+    awk '/\<connected\>/ {print $1, $2}')
+
+  # Divide Wi-Fi and Ethernet interfaces
+  ETHERNET=$(printf "%s\n" "$INTERFACES" | awk '/\<ethernet\>/ {print $1}')
+  WIFI=$(printf "%s\n" "$INTERFACES" | awk '/\<wifi\>/ {print $1}')
+
+  # Print output
+  if [[ ! -z $WIFI ]] && [[ ! -z $ETHERNET ]]; then
+    echo -e "\uf1eb  $(get_wifi_info)\n\uf6ff Ethernet"
+  elif [[ ! -z $WIFI ]] && [[ -z $ETHERNET ]]; then
+    echo -e "\uf1eb  $(get_wifi_info)"
+  elif [[ -z $WIFI ]] && [[ ! -z $ETHERNET ]]; then
+    echo -e "\uf6ff Ethernet"
+  else
+    echo -e "\ufaa9 No connection"
+  fi
+}
+
+# Show current IP address
+function show_ip() {
+  # Connected interfaces
+  INTERFACES=$($NMCLI -f DEVICE,TYPE,STATE dev status | \
+    awk '/\<connected\>/ {print $1, $2}')
+
+  # Divide Wi-Fi and Ethernet interfaces
+  ETHERNET=$(printf "%s\n" "$INTERFACES" | awk '/\<ethernet\>/ {print $1}')
+  WIFI=$(printf "%s\n" "$INTERFACES" | awk '/\<wifi\>/ {print $1}')
+
+  # Get IP info
+  if [[ ! -z $(which ip ) ]]; then
+    INFO="$(which ip) addr show"
+  elif [[ ! -z $(which ifconfig) ]]; then
+    INFO=$(which ifconfig)
+  else
+    printf "%s\n" \
+      "Unable to show IP address at this time."
+    exit 1
+  fi
+
+  WIFIIP=$($INFO $WIFI | awk '/\<inet\>/ {gsub("/.*",""); print $2}')
+  ETHERNETIP=$($INFO $ETHERNET | awk '/\<inet\>/ {gsub("/.*",""); print $2}')
+
+  # Print output
+  if [[ ! -z $WIFI ]] && [[ ! -z $ETHERNET ]]; then
+    echo -e "\uf1eb  $WIFIIP\n\uf6ff $ETHERNETIP"
+  elif [[ ! -z $WIFI ]] && [[ -z $ETHERNET ]]; then
+    echo -e "\uf1eb  $WIFIIP"
+  elif [[ -z $WIFI ]] && [[ ! -z $ETHERNET ]]; then
+    echo -e "\uf6ff $ETHERNETIP"
+  else
+    echo -e "\ufaa9 No connection"
+  fi
+}
+
+# Parse commands
+case $1 in
+  current|Current)
+    show_current
+    exit 0
+    ;;
+  ip|IP)
+    show_ip
+    exit 0
+    ;;
+  *)
+    printf "%s\n" "Invalid COMMAND: $1 is not a valid argument."
+    show_help
+    exit 1
+    ;;
+esac
