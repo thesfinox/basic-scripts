@@ -138,7 +138,7 @@ function choose_img_viewer() {
     if [[ ! -z $(which feh) ]]; then
       $CLIPBOARD -$ARG | $QR | $(which feh) -Z -
     elif [[ ! -z $(which sxiv ) ]]; then
-      TMPFILE="/tmp/qr_$(date +"%N").png"
+      TMPFILE=$(mktemp /tmp/qr_XXXXXXXXX.png)
       $CLIPBOARD -$ARG | $QR > $TMPFILE
       $(which sxiv) $TMPFILE
     else
@@ -153,6 +153,7 @@ function show_qr() {
   case $1 in
     p|primary|c|clipboard)
       show_clipboard $1
+      send_notification $1
       choose_img_viewer $1
       ;;
     *)
