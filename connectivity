@@ -100,9 +100,9 @@ function show_current() {
 
   # Print output
   if [[ ! -z $WIFI ]] && [[ ! -z $ETHERNET ]]; then
-    echo -e "\uf1eb  $(get_wifi_info)\n\uf6ff Ethernet"
+    echo -e "\uf1eb $(get_wifi_info)\n\uf6ff Ethernet"
   elif [[ ! -z $WIFI ]] && [[ -z $ETHERNET ]]; then
-    echo -e "\uf1eb  $(get_wifi_info)"
+    echo -e "\uf1eb $(get_wifi_info)"
   elif [[ -z $WIFI ]] && [[ ! -z $ETHERNET ]]; then
     echo -e "\uf6ff Ethernet"
   else
@@ -136,9 +136,9 @@ function show_ip() {
 
   # Print output
   if [[ ! -z $WIFI ]] && [[ ! -z $ETHERNET ]]; then
-    echo -e "\uf1eb  $WIFIIP\n\uf6ff $ETHERNETIP"
+    echo -e "\uf1eb $WIFIIP\n\uf6ff $ETHERNETIP"
   elif [[ ! -z $WIFI ]] && [[ -z $ETHERNET ]]; then
-    echo -e "\uf1eb  $WIFIIP"
+    echo -e "\uf1eb $WIFIIP"
   elif [[ -z $WIFI ]] && [[ ! -z $ETHERNET ]]; then
     echo -e "\uf6ff $ETHERNETIP"
   else
