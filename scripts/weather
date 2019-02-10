@@ -20,7 +20,7 @@
 
 # Show usage
 function show_usage() {
-  USAGE="$(basename $0) [-h]"
+  USAGE="$(basename $0) [-h] [-s]"
   printf "\n%s\n%s\n" "Usage:" "    $USAGE"
 }
 
@@ -30,7 +30,8 @@ function show_help() {
 
   printf "\n%s\n\n" "Get weather info."
   printf "%s\n" "OPTIONS:"
-  printf "%s\n" "    -h         Show this help and exit"
+  printf "%s\n" "    -h   Show this help and exit"
+  printf "%s\n" "    -s   Print short version"
 
   printf "\n%s\n%s\n\n" \
     "For bug report and info: riccardo.finotello@gmail.com" \
@@ -38,11 +39,14 @@ function show_help() {
 }
 
 # Parse options
-while getopts ":h" opt; do
+while getopts ":hs" opt; do
   case $opt in
     h)
       show_help
       exit 0
+      ;;
+    s)
+      SHORT=1
       ;;
     \?)
       printf "%s\n" "Invalid option: -$OPTARG." >&2
@@ -138,21 +142,23 @@ function json_report() {
   esac
   
   if [[ $ICON != "Unable to fetch weather info." ]]; then
-    echo -e "$TEMP°C $ICON"
+    case $1 in
+      s|short)
+        echo -e "$TEMP°C $ICON"
+        ;;
+      l|long)
+        echo -e "$NAME: $TEMP°C ($MAIN) $ICON"
+        ;;
+      *)
+        printf "%s\n" "Invalid argument: unable to parse weather info."
+        exit 1
+        ;;
+    esac
   else
     printf "%s\n" "$ICON"
     exit 1
   fi
 }
-
-if [[ -z $1 ]]; then
-  json_report
-  exit 0
-else
-  printf "%s\n" "Too many arguments."
-  show_usage
-  exit 1
-fi
 
 # Clickable block when using i3blocks in i3wm
 case $BLOCK_BUTTON in
@@ -169,3 +175,12 @@ case $BLOCK_BUTTON in
     exit 0
     ;;
 esac
+
+# Run the command
+if [[ ! -z $SHORT ]]; then
+  json_report short
+else
+  json_report long
+fi
+exit 0
+
