@@ -1,0 +1,171 @@
+#! /usr/bin/env bash
+
+#
+# Get weather info.
+#
+# The scripts checks weather condition on openweathermap.org and displays very
+# short information on current temperature and weather conditions in specified
+# city.
+#
+# Author:     Riccardo Finotello
+# E-mail:     riccardo.finotello@gmail.com
+#
+# Copyright:  2019 - Alessandra Cappati and Riccardo Finotello
+# License:    MIT License
+#
+
+# ------------------------------------
+# OPTIONS, HELP, USAGE AND CHECKS
+# ------------------------------------
+
+# Show usage
+function show_usage() {
+  USAGE="$(basename $0) [-h]"
+  printf "\n%s\n%s\n" "Usage:" "    $USAGE"
+}
+
+# Show help
+function show_help() {
+  show_usage
+
+  printf "\n%s\n\n" "Get weather info."
+  printf "%s\n" "OPTIONS:"
+  printf "%s\n" "    -h         Show this help and exit"
+
+  printf "\n%s\n%s\n\n" \
+    "For bug report and info: riccardo.finotello@gmail.com" \
+    "Copyright (c) 2019 - Alessandra Cappati and Riccardo Finotello - MIT License"
+}
+
+# Parse options
+while getopts ":h" opt; do
+  case $opt in
+    h)
+      show_help
+      exit 0
+      ;;
+    \?)
+      printf "%s\n" "Invalid option: -$OPTARG." >&2
+      show_usage
+      exit 1
+      ;;
+    :)
+      printf "%s\n" "-$OPTARG requires an argument." >&2
+      show_usage
+      exit 1
+      ;;
+  esac
+done
+
+# ------------------------------------
+# COMMANDS AND INFO
+# ------------------------------------
+
+# Check if necessary tools are installed
+if [[ ! -z $(which curl) ]]; then
+  CURL=$(which curl)
+else
+  printf "%s\n%s\n%s\n" \
+    "curl is not in the PATH." \
+    "You might have to install it. E.g.: sudo apt install curl" \
+    "curl is required for this script to work."
+  exit 1
+fi
+
+if [[ ! -z $(which jq) ]]; then
+  JQ=$(which jq)
+else
+  printf "%s\n%s\n%s\n" \
+    "The JSON parser is not in the PATH." \
+    "You might have to install it. E.g.: sudo apt install jq" \
+    "The JSON parser JQ is required for this script to work."
+  exit 1
+fi
+
+# Get weather report in JSON format
+# CODE='3165524' for Torino, Italy
+function get_report() {
+  URL='api.openweathermap.org/data/2.5/weather'
+  CODE='3165524'
+  UNITS='metric'
+  APPID='1303b30073ae867e2d12fd79dd5b6f09'
+
+  REQUEST="$URL?id=$CODE&units=$UNITS&APPID=$APPID"
+
+  REPORT=$(curl -Ss $REQUEST)
+
+  echo $REPORT
+}
+
+# Process JSON response
+function json_report() {
+  NAME=$(get_report | $JQ --raw-output '. | .name')
+  TEMP=$(get_report | $JQ --raw-output '. | if .main.temp-(.main.temp%10) < 0.5 then (.main.temp|floor) else (.main.temp|floor)+1 end')
+  MAIN=$(get_report | $JQ --raw-output '. | .weather[0].main')
+  DESC=$(get_report | $JQ --raw-output '. | .weather[0].description')
+
+  case $DESC in
+    "clear sky")
+      ICON="\ue30d"
+      ;;
+    "few clouds")
+      ICON="\ue302"
+      ;;
+    "scattered clouds")
+      ICON="\ue33d"
+      ;;
+    "broken clouds")
+      ICON="\ue312"
+      ;;
+    "shower rain")
+      ICON="\ue309"
+      ;;
+    rain)
+      ICON="\ue308"
+      ;;
+    thunderstorm)
+      ICON="\ue30d"
+      ;;
+    snow)
+      ICON="\ue30a"
+      ;;
+    mist|fog)
+      ICON="\ue303"
+      ;;
+    *)
+      ICON="Unable to fetch weather info."
+      ;;
+  esac
+  
+  if [[ $ICON != "Unable to fetch weather info." ]]; then
+    echo -e "$TEMP°C $ICON"
+  else
+    printf "%s\n" "$ICON"
+    exit 1
+  fi
+}
+
+if [[ -z $1 ]]; then
+  json_report
+  exit 0
+else
+  printf "%s\n" "Too many arguments."
+  show_usage
+  exit 1
+fi
+
+# Clickable block when using i3blocks in i3wm
+case $BLOCK_BUTTON in
+  1)
+    $BROWSER "https://openweathermap.org" & /dev/null
+    exit 0
+    ;;
+  2)
+    /usr/bin/pkill -RTMIN+1 i3blocks
+    exit 0
+    ;;
+  3)
+    $BROWSER "https://openweathermap.org" & /dev/null
+    exit 0
+    ;;
+esac

@@ -1,7 +1,7 @@
 #! /usr/bin/env bash
 
 #
-# Toggle Wifi/Ethernet on and off.
+# Toggle Wifi on and off and display connection info.
 #
 # The script toggles the connection capabilities on and off. It uses
 # NetworkManager in order to get the current status of the interfaces and to
@@ -10,7 +10,7 @@
 # Author:     Riccardo Finotello
 # E-mail:     riccardo.finotello@gmail.com
 #
-# Copyright:  Riccardo Finotello - 2019
+# Copyright:  Alessandra Cappati and Riccardo Finotello - 2019
 # License:    MIT License
 #
 
@@ -28,16 +28,17 @@ function show_usage() {
 function show_help() {
   show_usage
 
-  printf "\n%s\n\n" "Toggle Wifi/Ethernet on and off."
+  printf "\n%s\n\n" "Toggle Wifi on and off and display connection info."
   printf "%s\n" "OPTIONS:"
   printf "%s\n" "    -h         Show this help and exit"
   printf "\n%s\n" "COMMAND:"
   printf "%s\n" "    current    Show currently connected interface(s)"
-  printf "%s\n" "    ip         Show the IP address for the currently connected interface(s)"
+  printf "%s\n" "    ip         Show IP of the connected interface(s)"
+  printf "%s\n" "    toggle     Toggle Wifi interface on and off"
 
   printf "\n%s\n%s\n\n" \
     "For bug report and info: riccardo.finotello@gmail.com" \
-    "Copyright (c) 2019 - Riccardo Finotello - MIT License"
+    "Copyright (c) 2019 -  Alessandra Cappati and Riccardo Finotello - MIT License"
 }
 
 # Check if NetworkManager is installed
@@ -146,19 +147,70 @@ function show_ip() {
   fi
 }
 
+# Toggle Wifi interface on and off
+function toggle_wifi_state() {
+  STATUS=$($NMCLI radio wifi)
+
+  if [[ $STATUS = "enabled" ]]; then
+    $NMCLI radio wifi off
+  else
+    $NMCLI radio wifi on
+  fi
+}
+
 # Parse commands
 case $1 in
-  current|Current)
+  current)
     show_current
     exit 0
     ;;
-  ip|IP)
+  ip)
     show_ip
+    exit 0
+    ;;
+  toggle)
+    toggle_wifi_state
     exit 0
     ;;
   *)
     printf "%s\n" "Invalid COMMAND: $1 is not a valid argument."
     show_help
     exit 1
+    ;;
+esac
+
+
+# Check if the notification client is installed
+if [[ ! -z $(which notify-send) ]]; then
+  NOTIFICATIONS=$(which notify-send)
+else
+  printf "%s\n%s\n%s\n" \
+    "The notification client is not in the PATH." \
+    "You might have to install it. E.g.: sudo apt install ruby-notify." \
+    "Some of the functionalities of this script may be compromised otherwise."
+fi
+
+# Clickable block when using i3blocks in i3wm
+function show_notification() {
+  ICON="/usr/share/icons/gnome/48x48/status/network-idle.png"
+  if [[ -f $ICON  ]]; then
+    NOTIFICATIONS="$NOTIFICATIONS --icon $ICON"
+  fi
+  
+  $NOTIFICATIONS --category=network "Connection manager" "$($NMCLI -p device $1)"
+}
+
+case $BLOCK_BUTTON in
+  1)
+    show_notification status
+    exit 0
+    ;;
+  2)
+    /usr/bin/pkill -RTMIN+1 i3blocks
+    exit 0
+    ;;
+  3)
+    show_notification wifi
+    exit 0
     ;;
 esac

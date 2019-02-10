@@ -11,7 +11,7 @@
 # Author:     Riccardo Finotello
 # E-mail:     riccardo.finotello@gmail.com
 #
-# Copyright:  Riccardo Finotello and Alessandra Cappati- 2019
+# Copyright:  Alessandra Cappati and Riccardo Finotello - 2019
 # License:    MIT License
 #
 
@@ -37,7 +37,7 @@ function show_help() {
 
   printf "\n%s\n%s\n\n" \
     "For bug report and info: riccardo.finotello@gmail.com" \
-    "Copyright (c) 2019 - Riccardo Finotello - MIT License"
+    "Copyright (c) 2019 - Alessandra Cappati and Riccardo Finotello - MIT License"
 }
 
 # Check if the clipboard manager is installed
