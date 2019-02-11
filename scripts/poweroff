@@ -42,7 +42,7 @@ function show_help() {
   printf "%s\n" "    s or standby  Enter suspension mode"
   printf "%s\n" "    r or reboot   Reboot the PC"
   printf "%s\n" "    p or shutdown Shutdown the PC"
-  printf "\n%s\n" "COMMAND:"
+  printf "\n%s\n" "STATUS:"
   printf "%s\n" "    p or pause    Pause notifications"
   printf "%s\n" "    r or resume   Resume notifications"
 
