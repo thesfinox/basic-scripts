@@ -117,14 +117,14 @@ fi
 function stop_notifications() {
   if [[ ! -z $NOTIFICATIONS ]]; then
     $NOTIFICATIONS DUNST_COMMAND_PAUSE
-    echo "off" > $HOME/.notifications-state
+    echo -e "\ufba1 OFF" > $HOME/.notifications-state
   fi
 }
 
 function resume_notifications() {
   if [[ ! -z $NOTIFICATIONS ]]; then
     $NOTIFICATIONS DUNST_COMMAND_RESUME
-    echo "on" > $HOME/.notifications-state
+    echo -e "\ufba0 ON" > $HOME/.notifications-state
   fi
 }
 
