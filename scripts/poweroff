@@ -266,7 +266,7 @@ function toggle_notifications() {
 }
 
 # Parse options
-while getopts ":hmc:" opt; do
+while getopts ":hmc:n:" opt; do
   case $opt in
     h)
       show_help
