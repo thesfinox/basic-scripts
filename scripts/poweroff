@@ -45,6 +45,7 @@ function show_help() {
   printf "\n%s\n" "STATUS:"
   printf "%s\n" "    p or pause    Pause notifications"
   printf "%s\n" "    r or resume   Resume notifications"
+  printf "%s\n" "    q or query    Query notifications state"
 
   printf "\n%s\n%s\n\n" \
     "For bug report and info: riccardo.finotello@gmail.com" \
@@ -116,12 +117,14 @@ fi
 function stop_notifications() {
   if [[ ! -z $NOTIFICATIONS ]]; then
     $NOTIFICATIONS DUNST_COMMAND_PAUSE
+    echo "off" > $HOME/.notifications-state
   fi
 }
 
 function resume_notifications() {
   if [[ ! -z $NOTIFICATIONS ]]; then
     $NOTIFICATIONS DUNST_COMMAND_RESUME
+    echo "on" > $HOME/.notifications-state
   fi
 }
 
@@ -255,6 +258,9 @@ function toggle_notifications() {
         ;;
       r|resume)
         resume_notifications
+        ;;
+      q|query)
+        cat $HOME/.notifications-state
         ;;
       *)
         printf "%s\n" "Invalid argument: '$1' is not a valid STATUS"
