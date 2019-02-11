@@ -163,16 +163,14 @@ function json_report() {
 # Clickable block when using i3blocks in i3wm
 case $BLOCK_BUTTON in
   1)
-    $BROWSER "https://openweathermap.org" & /dev/null
-    exit 0
+    /usr/bin/pkill -RTMIN+1 i3blocks
     ;;
   2)
     /usr/bin/pkill -RTMIN+1 i3blocks
-    exit 0
     ;;
   3)
-    $BROWSER "https://openweathermap.org" & /dev/null
-    exit 0
+    /usr/bin/pkill -RTMIN+1 i3blocks
+    $BROWSER "https://openweathermap.org" &> /dev/null
     ;;
 esac
 

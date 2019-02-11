@@ -81,6 +81,26 @@ if [[ -z $1 ]]; then
   exit 1
 fi
 
+# Check if the notification client is installed
+if [[ ! -z $(which notify-send) ]]; then
+  NOTIFICATIONS=$(which notify-send)
+else
+  printf "%s\n%s\n%s\n" \
+    "The notification client is not in the PATH." \
+    "You might have to install it. E.g.: sudo apt install ruby-notify." \
+    "Some of the functionalities of this script may be compromised otherwise."
+fi
+
+# Clickable block when using i3blocks in i3wm
+function show_notification() {
+  ICON="/usr/share/icons/gnome/48x48/status/network-idle.png"
+  if [[ -f $ICON  ]]; then
+    NOTIFICATIONS="$NOTIFICATIONS --icon $ICON"
+  fi
+  
+  $NOTIFICATIONS --category=network "Connection manager" "$($NMCLI -p device $1)"
+}
+
 # Show currently connected interface(s)
 function get_wifi_info() {
   WIFIINFO=$($NMCLI -f IN-USE,SSID,SIGNAL -t dev wifi)
@@ -161,6 +181,20 @@ function toggle_wifi_state() {
 # Parse commands
 case $1 in
   current)
+    # Clickable widget for i3wm
+    case $BLOCK_BUTTON in
+      1)
+        /usr/bin/pkill -RTMIN+1 i3blocks
+        show_notification status
+        ;;
+      2)
+        /usr/bin/pkill -RTMIN+1 i3blocks
+        ;;
+      3)
+        /usr/bin/pkill -RTMIN+1 i3blocks
+        show_notification wifi
+        ;;
+    esac
     show_current
     exit 0
     ;;
@@ -176,41 +210,5 @@ case $1 in
     printf "%s\n" "Invalid COMMAND: $1 is not a valid argument."
     show_help
     exit 1
-    ;;
-esac
-
-
-# Check if the notification client is installed
-if [[ ! -z $(which notify-send) ]]; then
-  NOTIFICATIONS=$(which notify-send)
-else
-  printf "%s\n%s\n%s\n" \
-    "The notification client is not in the PATH." \
-    "You might have to install it. E.g.: sudo apt install ruby-notify." \
-    "Some of the functionalities of this script may be compromised otherwise."
-fi
-
-# Clickable block when using i3blocks in i3wm
-function show_notification() {
-  ICON="/usr/share/icons/gnome/48x48/status/network-idle.png"
-  if [[ -f $ICON  ]]; then
-    NOTIFICATIONS="$NOTIFICATIONS --icon $ICON"
-  fi
-  
-  $NOTIFICATIONS --category=network "Connection manager" "$($NMCLI -p device $1)"
-}
-
-case $BLOCK_BUTTON in
-  1)
-    show_notification status
-    exit 0
-    ;;
-  2)
-    /usr/bin/pkill -RTMIN+1 i3blocks
-    exit 0
-    ;;
-  3)
-    show_notification wifi
-    exit 0
     ;;
 esac

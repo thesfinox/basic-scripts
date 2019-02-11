@@ -261,6 +261,24 @@ function toggle_notifications() {
         ;;
       q|query)
         cat $HOME/.notifications-state
+
+        case $BLOCK_BUTTON in
+          1)
+            if [[ $(cat ~/.notifications-state | awk '{print $2}') == "ON" ]]; then
+              stop_notifications
+            else
+              resume_notifications
+            fi
+            /usr/bin/pkill -RTMIN+1 i3blocks
+            ;;
+          2)
+            /usr/bin/pkill -RTMIN+1 i3blocks
+            ;;
+          3)
+            /usr/bin/pkill -RTMIN+1 i3blocks
+            $NOTIFICATIONS "Notifications" "$(cat ~/.notifications-state)"
+            ;;
+        esac
         ;;
       *)
         printf "%s\n" "Invalid argument: '$1' is not a valid STATUS"
