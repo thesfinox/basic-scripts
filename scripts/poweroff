@@ -22,7 +22,7 @@
 
 # Show usage
 function show_usage() {
-  USAGE="$(basename $0) [-h] [-m] [-c COMMAND]"
+  USAGE="$(basename $0) [-h] [-m] [-c COMMAND] [-n STATUS]"
   printf "\n%s\n%s\n" "Usage:" "    $USAGE"
 }
 
@@ -35,12 +35,16 @@ function show_help() {
   printf "%s\n" "    -h            Show this help and exit"
   printf "%s\n" "    -m            Shows an interactive menu"
   printf "%s\n" "    -c COMMAND    Execute COMMAND and exit"
+  printf "%s\n" "    -n STATUS     Chenge the status of the notifications"
   printf "\n%s\n" "COMMAND:"
   printf "%s\n" "    l or lock     Lock the screen"
   printf "%s\n" "    q or logout   Log out from the current session"
   printf "%s\n" "    s or standby  Enter suspension mode"
   printf "%s\n" "    r or reboot   Reboot the PC"
   printf "%s\n" "    p or shutdown Shutdown the PC"
+  printf "\n%s\n" "COMMAND:"
+  printf "%s\n" "    p or pause    Pause notifications"
+  printf "%s\n" "    r or resume   Resume notifications"
 
   printf "\n%s\n%s\n\n" \
     "For bug report and info: riccardo.finotello@gmail.com" \
@@ -242,6 +246,25 @@ function show_menu() {
   fi
 }
 
+# Toggle notifications
+function toggle_notifications() {
+  if [[ ! -z $NOTIFICATIONS ]]; then
+    case $1 in
+      p|pause)
+        stop_notifications
+        ;;
+      r|resume)
+        resume_notifications
+        ;;
+      *)
+        printf "%s\n" "Invalid argument: '$1' is not a valid STATUS"
+        show_help
+        exit 1
+        ;;
+    esac
+  fi
+}
+
 # Parse options
 while getopts ":hmc:" opt; do
   case $opt in
@@ -255,6 +278,10 @@ while getopts ":hmc:" opt; do
       ;;
     c)
       parse_command $OPTARG
+      exit 0
+      ;;
+    n)
+      toggle_notifications $OPTARG
       exit 0
       ;;
     \?)
