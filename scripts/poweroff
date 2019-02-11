@@ -1,0 +1,280 @@
+#! /usr/bin/env bash
+
+#
+# Logout/shutdown script.
+#
+# This is a logout/shutdown script. It assumes the presence of systemctl as a
+# system command and i3 window manager as a default: it can (and most probably
+# will) be expanded for other window managers. It also implements a simple
+# interactive menu (rofi/dmenu) to select the command. The lock programme is by
+# default i3lock, while we assume that dunst is the notification server.
+#
+# Author:     Riccardo Finotello
+# E-mail:     riccardo.finotello@gmail.com
+#
+# Copyright:  2019 - Alessandra Cappati and Riccardo Finotello
+# License:    MIT License
+#
+
+# ------------------------------------
+# OPTIONS, HELP, USAGE AND CHECKS
+# ------------------------------------
+
+# Show usage
+function show_usage() {
+  USAGE="$(basename $0) [-h] [-m] [-c COMMAND]"
+  printf "\n%s\n%s\n" "Usage:" "    $USAGE"
+}
+
+# Show help
+function show_help() {
+  show_usage
+
+  printf "\n%s\n\n" "Logout/shutdown script."
+  printf "%s\n" "OPTIONS:"
+  printf "%s\n" "    -h            Show this help and exit"
+  printf "%s\n" "    -m            Shows an interactive menu"
+  printf "%s\n" "    -c COMMAND    Execute COMMAND and exit"
+  printf "\n%s\n" "COMMAND:"
+  printf "%s\n" "    l or lock     Lock the screen"
+  printf "%s\n" "    q or logout   Log out from the current session"
+  printf "%s\n" "    s or standby  Enter suspension mode"
+  printf "%s\n" "    r or reboot   Reboot the PC"
+  printf "%s\n" "    p or shutdown Shutdown the PC"
+
+  printf "\n%s\n%s\n\n" \
+    "For bug report and info: riccardo.finotello@gmail.com" \
+    "Copyright (c) 2019 - Alessandra Cappati and Riccardo Finotello - MIT
+      License"
+}
+
+# Check if the notification server and client are installed
+if [[ ! -z $(which dunst) ]]; then
+  if [[ ! -z $(which notify-send) ]]; then
+    NOTIFICATIONS=$(which notify-send)
+  else
+    printf "%s\n%s\n%s\n" \
+      "The notification client is not in the PATH." \
+      "You might have to install it. E.g.: sudo apt install ruby-notify." \
+      "Some of the functionalities of this script may be compromised otherwise."
+  fi
+else
+  printf "%s\n%s\n%s\n" \
+    "The default notification client is not installed." \
+    "You might have to install it. E.g.: sudo apt install dunst." \
+    "Some of the functionalities of this script may be compromised otherwise."
+fi
+
+# Check if systemctl is in the PATH
+if [[ ! -z $(which systemctl) ]]; then
+  SYSTEMCTL=$(which systemctl)
+else
+  printf "%s\n%s\n%s\n" \
+    "Systemctl is not in the PATH." \
+    "Systemctl is a critical component of this script." \
+    "The script will not work unless systemctl is in the path."
+  exit 1
+fi
+
+# Check if the lock programme is installed
+if [[ ! -z $(which i3lock) ]]; then
+  LOCK=$(which i3lock)
+else
+  printf "%s\n%s\n%s\n" \
+    "The default screen locker is not in the PATH." \
+    "You might have to install it. E.g.: sudo apt install i3lock." \
+    "Some of the functionalities of this script may be compromised otherwise."
+fi
+
+# Check if the exit script is installed
+if [[ ! -z $(which i3-msg) ]]; then
+  EXIT=$(which i3-msg)
+else
+  printf "%s\n%s\n%s\n" \
+    "The default window manager is i3." \
+    "We have not detected the correct logout script (i3-msg)." \
+    "Some of the functionalities of this script may be compromised."
+fi
+
+# Check if the xmenu script is installed
+if [[ ! -z $(which rofi) ]]; then
+  XMENU=$(which rofi)
+elif [[ ! -z $(which dmenu) ]]; then
+  XMENU=$(which dmenu)
+else
+  printf "%s\n%s\n%s\n" \
+    "The xmenu script is not in the PATH." \
+    "You might have to install it. E.g.: sudo apt install rofi." \
+    "Some of the functionalities of this script may be compromised otherwise."
+fi
+
+# Stop/start notifications
+function stop_notifications() {
+  if [[ ! -z $NOTIFICATIONS ]]; then
+    $NOTIFICATIONS DUNST_COMMAND_PAUSE
+  fi
+}
+
+function resume_notifications() {
+  if [[ ! -z $NOTIFICATIONS ]]; then
+    $NOTIFICATIONS DUNST_COMMAND_RESUME
+  fi
+}
+
+# Screen lock
+function screen_lock() {
+  if [[ ! -z $LOCK ]]; then
+    if [[ -f $HOME/.config/i3/lock-screen.png ]]; then
+      LOCK="$LOCK -i $HOME/.config/i3/lock-screen.png"
+    fi
+    case $1 in
+      f|fork)
+        $LOCK
+        ;;
+      n|no-fork)
+        $LOCK -n
+        ;;
+      *)
+        printf "%s\n%s\n" \
+          "Invalid argument: '$1' is not a valid argument." \
+          "You must choose between 'fork' and 'not-fork'."
+        ;;
+    esac
+  fi
+}
+
+# Logout
+function i3logout() {
+  if [[ ! -z $EXIT ]]; then
+    $EXIT exit
+  fi
+}
+
+# Suspend
+function suspend_system() {
+  stop_notifications
+  screen_lock fork
+  if [[ ! -z $SYSTEMCTL ]]; then
+    $SYSTEMCTL suspend
+  fi
+  resume_notifications
+}
+
+# Reboot
+function reboot_system() {
+  if [[ ! -z $SYSTEMCTL ]]; then
+    $SYSTEMCTL reboot
+  fi
+}
+
+# Poweroff
+function poweroff_system() {
+  if [[ ! -z $SYSTEMCTL ]]; then
+    $SYSTEMCTL poweroff
+  fi
+}
+
+# Parse COMMAND
+function parse_command() {
+  case $1 in
+    l|lock)
+      stop_notifications
+      screen_lock no-fork
+      resume_notifications
+      ;;
+    q|logout)
+      i3logout
+      ;;
+    s|standby)
+      suspend_system
+      ;;
+    r|reboot)
+      reboot_system
+      ;;
+    p|shutdown)
+      poweroff_system
+      ;;
+    *)
+      printf "%s\n" "Invalid COMMAND: '$1' is not a valid argument."
+      show_help
+      exit 1
+      ;;
+  esac
+}
+
+# Show option menu
+function show_menu() {
+  ACTIONS="Lock\nLogout\nStandby\nReboot\nShutdown"  
+  if [[ $XMENU == "$(which rofi)" ]]; then
+    URGENT="3,4"
+    PROMPT="Action: "
+    MESG="<span foreground='white'>This is the <b>poweroff</b> menu. Choose your action: </span>"
+    RESP=$(echo -e $ACTIONS | $XMENU -i -u $URGENT -dmenu -p "$PROMPT" -location 2 -width 100 -lines 5 -mesg "$MESG")
+  elif [[ $MENU == "$(which dmenu)" ]]; then
+    PROMPT="Poweroff menu. Choose your action: "
+    CMD="$XMENU -p '$PROMPT'"
+    RESP=$(echo -e $ACTIONS | $XMENU -p "$PROMPT")
+  fi
+
+  if [[ ! -z $RESP ]]; then
+    case $RESP in
+      Lock)
+        stop_notifications
+        screen_lock no-fork
+        resume_notifications
+        ;;
+      Logout)
+        i3logout
+        ;;
+      Standby)
+        suspend_system
+        ;;
+      Reboot)
+        reboot_system
+        ;;
+      Shutdown)
+        poweroff_system
+        ;;
+      *)
+        printf "%s\n" "Invalid argument: '$RESP' is not a valid command."
+        ;;
+    esac
+  fi
+}
+
+# Parse options
+while getopts ":hmc:" opt; do
+  case $opt in
+    h)
+      show_help
+      exit 0
+      ;;
+    m)
+      show_menu
+      exit 0
+      ;;
+    c)
+      parse_command $OPTARG
+      exit 0
+      ;;
+    \?)
+      printf "%s\n" "Invalid option: -$OPTARG." >&2
+      show_usage
+      exit 1
+      ;;
+    :)
+      printf "%s\n" "-$OPTARG requires an argument." >&2
+      show_usage
+      exit 1
+      ;;
+  esac
+done
+
+# ------------------------------------
+# COMMANDS AND INFO
+# ------------------------------------
+
+if [[ -z $1 ]]; then
+  show_help
+  exit 1
+fi
