@@ -132,7 +132,7 @@ case $BLOCK_BUTTON in
     ;;
   3)
     /usr/bin/pkill -RTMIN+1 i3blocks
-    $NOTIFICATIONS "Battery info" "$STATUS"
+    $NOTIFICATIONS -a "Battery" "Battery info" "$STATUS"
     ;;
 esac
 

@@ -276,7 +276,7 @@ function toggle_notifications() {
             ;;
           3)
             /usr/bin/pkill -RTMIN+1 i3blocks
-            $NOTIFICATIONS "Notifications" "$(cat ~/.notifications-state)"
+            $NOTIFICATIONS -a "Notifications" "Notifications" "$(cat ~/.notifications-state)"
             ;;
         esac
         ;;

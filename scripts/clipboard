@@ -113,7 +113,7 @@ function send_notification() {
       ;;
   esac
 
-  $NOTIFICATIONS "$TITLE" "$(show_clipboard $ARG)"
+  $NOTIFICATIONS -a "Clipboard" "$TITLE" "$(show_clipboard $ARG)"
 }
 
 function show_notification() {
