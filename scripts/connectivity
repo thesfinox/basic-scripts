@@ -185,14 +185,33 @@ case $1 in
     case $BLOCK_BUTTON in
       1)
         /usr/bin/pkill -RTMIN+1 i3blocks
-        show_notification status
+        if [[ $($NMCLI radio wifi) == "enabled" ]]; then
+          LIST=$(nmcli -f SSID,RATE,SIGNAL,BARS,SECURITY device wifi)
+          if [[ ! -z $(which rofi) ]]; then
+            CONNECTION=$(echo "$LIST" | tail -n+2 | $(which rofi) -dmenu -p "Connection: " -mesg $(echo "$LIST" | head -n1))
+          elif [[ ! -z $(which dmenu) ]]; then
+            CONNECTION=$(echo "$LIST" | tail -n+2 | $(which dmenu) -p $(echo "$LIST" | head -n1))
+          else
+            show_notification wifi
+          fi
+          $NMCLI device wifi connect $CONNECTION &> /dev/null
+        else
+          if [[ ! -z $(which rofi) ]]; then
+            QUESTION=$(echo "YES|NO" | $(which rofi) -sep "|" -dmenu -p "Turn Wi-Fi on?")
+          elif [[ ! -z $(which dmenu) ]]; then
+            QUESTION=$(echo -e "YES\nNO" | $(which dmenu) -p "Turn Wi-Fi on?")
+          fi
+          if [[ ! -z $QUESTION ]] && [[ $QUESTION == "YES" ]]; then
+            toggle_wifi_state
+          fi
+        fi
         ;;
       2)
         /usr/bin/pkill -RTMIN+1 i3blocks
         ;;
       3)
         /usr/bin/pkill -RTMIN+1 i3blocks
-        show_notification wifi
+        show_notification status
         ;;
     esac
     show_current

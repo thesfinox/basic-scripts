@@ -211,7 +211,7 @@ function parse_command() {
 
 # Show option menu
 function show_menu() {
-  ACTIONS="Lock\nLogout\nStandby\nReboot\nShutdown"  
+  ACTIONS="Lock\nExit\nStandby\nReboot\nShutdown"  
   if [[ $XMENU == "$(which rofi)" ]]; then
     URGENT="3,4"
     PROMPT="Action: "
@@ -230,7 +230,7 @@ function show_menu() {
         screen_lock no-fork
         resume_notifications
         ;;
-      Logout)
+      Exit)
         i3logout
         ;;
       Standby)
