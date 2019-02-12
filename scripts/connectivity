@@ -206,7 +206,7 @@ function clickable_widget() {
         fi
       else
         if [[ ! -z $(which rofi) ]]; then
-          QUESTION=$(echo "YES|NO" | $(which rofi) -sep "|" -dmenu -p "Turn Wi-Fi on?")
+          QUESTION=$(echo "YES|NO" | $(which rofi) -sep "|" -dmenu -p "Turn Wi-Fi on?" -lines 2)
         elif [[ ! -z $(which dmenu) ]]; then
           QUESTION=$(echo -e "YES\nNO" | $(which dmenu) -p "Turn Wi-Fi on?")
         fi
