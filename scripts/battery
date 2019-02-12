@@ -1,0 +1,139 @@
+#! /usr/bin/env bash
+
+#
+# Read battery info.
+#
+# This script reads battery information and displays it in the shortest possible
+# form. It uses UPOWER to get battery info and displays notifications in case
+# the level drops below 10%.
+#
+# Author:     Riccardo Finotello
+# E-mail:     riccardo.finotello@gmail.com
+#
+# Copyright:  2019 - Alessandra Cappati and Riccardo Finotello
+# License:    MIT License
+#
+
+# ------------------------------------
+# OPTIONS, HELP, USAGE AND CHECKS
+# ------------------------------------
+
+# Show usage
+function show_usage() {
+  USAGE="$(basename $0) [-h]"
+  printf "\n%s\n%s\n" "Usage:" "    $USAGE"
+}
+
+# Show help
+function show_help() {
+  show_usage
+
+  printf "\n%s\n\n" "Read battery info."
+  printf "%s\n" "OPTIONS:"
+  printf "%s\n" "    -h         Show this help and exit"
+
+  printf "\n%s\n%s\n\n" \
+    "For bug report and info: riccardo.finotello@gmail.com" \
+    "Copyright (c) 2019 - Alessandra Cappati and Riccardo Finotello - MIT License"
+}
+
+# Parse options
+while getopts ":h" opt; do
+  case $opt in
+    h)
+      show_help
+      exit 0
+      ;;
+    \?)
+      printf "%s\n" "Invalid option: -$OPTARG." >&2
+      show_usage
+      exit 1
+      ;;
+    :)
+      printf "%s\n" "-$OPTARG requires an argument." >&2
+      show_usage
+      exit 1
+      ;;
+  esac
+done
+
+# ------------------------------------
+# COMMANDS AND INFO
+# ------------------------------------
+
+# Check the presence of UPOWER
+if [[ ! -z $(which upower) ]]; then
+  INFO=$(which upower)
+else
+  printf "%s\n%s\n%s\n" \
+    "upower is not in the PATH." \
+    "You might have to add it. E.g.: sudo apt install upower." \
+    "upower is a critical component: the script will not work without it."
+  exit 1
+fi
+
+# Check if the notification client is installed
+if [[ ! -z $(which notify-send) ]]; then
+  NOTIFICATIONS=$(which notify-send)
+else
+  printf "%s\n%s\n%s\n" \
+    "The notification client is not in the PATH." \
+    "You might have to add it. E.g.: sudo apt install ruby-notify." \
+    "Some of the functionalities might be compromised."
+fi
+
+# Read battery info
+BATTERY="BAT0"
+BATTERYPATH=$($INFO -e | grep $BATTERY)
+STATUS=$($INFO -i $BATTERYPATH)
+
+PERCENTAGE=$(echo "$STATUS" | awk '/percentage/ {print $2}')
+BATTERYICON=$(echo "$STATUS" | awk '/icon-name/ {print $2}' | tr -d "'")
+
+case $BATTERYICON in
+  battery-caution-charging-symbolic)
+    ICON="\uf102 \uf60b"
+    ;;
+  battery-caution-symbolic)
+    ICON="\uf103 \uf60b"
+    ;;
+  battery-low-charging-symbolic)
+    ICON="\uf102 \uf244"
+    ;;
+  battery-low-symbolic)
+    ICON="\uf103 \uf244"
+    ;;
+  battery-good-charging-symbolic)
+    ICON="\uf102 \uf242"
+    ;;
+  battery-good-symbolic)
+    ICON="\uf103 \uf242"
+    ;;
+  battery-full-charging-symbolic)
+    ICON="\uf102 \f240"
+    ;;
+  battery-full-symbolic)
+    ICON="\uf103 \uf240"
+    ;;
+  *)
+    printf "%s\n" "N.A."
+    exit 1
+    ;;
+esac
+
+echo -e "$PERCENTAGE $ICON"
+
+case $BLOCK_BUTTON in
+  1)
+    /usr/bin/pkill -RTMIN+1 i3blocks
+    ;;
+  2)
+    /usr/bin/pkill -RTMIN+1 i3blocks
+    ;;
+  3)
+    /usr/bin/pkill -RTMIN+1 i3blocks
+    $NOTIFICATIONS "Battery info" "$STATUS"
+    ;;
+esac
+
+exit 0

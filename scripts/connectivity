@@ -171,50 +171,65 @@ function show_ip() {
 function toggle_wifi_state() {
   STATUS=$($NMCLI radio wifi)
 
-  if [[ $STATUS = "enabled" ]]; then
-    $NMCLI radio wifi off
-  else
-    $NMCLI radio wifi on
-  fi
+  case $STATUS in
+    enabled)
+      $NMCLI radio wifi off
+      ;;
+    disabled)
+      $NMCLI radio wifi on
+      ;;
+    *)
+      printf "%s\n" "Invalid STATUS: '$1' is not a valid status."
+      exit 1
+      ;;
+  esac
+}
+
+# Clickable widget for i3wm
+function clickable_widget() {
+  case $BLOCK_BUTTON in
+    1)
+      /usr/bin/pkill -RTMIN+1 i3blocks
+      if [[ $($NMCLI radio wifi) == "enabled" ]]; then
+        LIST=$(nmcli -f SSID,RATE,SIGNAL,BARS,SECURITY device wifi)
+        if [[ ! -z $(which rofi) ]]; then
+          CONNECTION=$(echo "$LIST" | tail -n+2 | $(which rofi) \
+            -mesg "<span foreground='white'>$(echo "$LIST" | head -n1)</span>" \
+            -dmenu -p "Connection: ")
+          $NMCLI connection up $CONNECTION &> /dev/null
+        elif [[ ! -z $(which dmenu) ]]; then
+          CONNECTION=$(echo "$LIST" | tail -n+2 | $(which dmenu) \
+            -p $(echo "$LIST" | head -n1))
+          $NMCLI connection up $CONNECTION &> /dev/null
+        else
+          show_notification wifi
+        fi
+      else
+        if [[ ! -z $(which rofi) ]]; then
+          QUESTION=$(echo "YES|NO" | $(which rofi) -sep "|" -dmenu -p "Turn Wi-Fi on?")
+        elif [[ ! -z $(which dmenu) ]]; then
+          QUESTION=$(echo -e "YES\nNO" | $(which dmenu) -p "Turn Wi-Fi on?")
+        fi
+        if [[ ! -z $QUESTION ]] && [[ $QUESTION == "YES" ]]; then
+          toggle_wifi_state
+        fi
+      fi
+      ;;
+    2)
+      /usr/bin/pkill -RTMIN+1 i3blocks
+      ;;
+    3)
+      /usr/bin/pkill -RTMIN+1 i3blocks
+      show_notification status
+      ;;
+  esac
 }
 
 # Parse commands
 case $1 in
   current)
-    # Clickable widget for i3wm
-    case $BLOCK_BUTTON in
-      1)
-        /usr/bin/pkill -RTMIN+1 i3blocks
-        if [[ $($NMCLI radio wifi) == "enabled" ]]; then
-          LIST=$(nmcli -f SSID,RATE,SIGNAL,BARS,SECURITY device wifi)
-          if [[ ! -z $(which rofi) ]]; then
-            CONNECTION=$(echo "$LIST" | tail -n+2 | $(which rofi) -dmenu -p "Connection: " -mesg $(echo "$LIST" | head -n1))
-          elif [[ ! -z $(which dmenu) ]]; then
-            CONNECTION=$(echo "$LIST" | tail -n+2 | $(which dmenu) -p $(echo "$LIST" | head -n1))
-          else
-            show_notification wifi
-          fi
-          $NMCLI device wifi connect $CONNECTION &> /dev/null
-        else
-          if [[ ! -z $(which rofi) ]]; then
-            QUESTION=$(echo "YES|NO" | $(which rofi) -sep "|" -dmenu -p "Turn Wi-Fi on?")
-          elif [[ ! -z $(which dmenu) ]]; then
-            QUESTION=$(echo -e "YES\nNO" | $(which dmenu) -p "Turn Wi-Fi on?")
-          fi
-          if [[ ! -z $QUESTION ]] && [[ $QUESTION == "YES" ]]; then
-            toggle_wifi_state
-          fi
-        fi
-        ;;
-      2)
-        /usr/bin/pkill -RTMIN+1 i3blocks
-        ;;
-      3)
-        /usr/bin/pkill -RTMIN+1 i3blocks
-        show_notification status
-        ;;
-    esac
     show_current
+    clickable_widget
     exit 0
     ;;
   ip)
