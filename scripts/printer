@@ -113,7 +113,7 @@ while getopts ":hmP:dDn:p:l" opt; do
       NUMBERUP=$OPTARG
       ;;
     l)
-      LANDSCAPE="orientation-requested=5"
+      LANDSCAPE="Landscape"
       ;;
     \?)
       printf "%s\n" "Invalid option: -$OPTARG." >&2
@@ -177,7 +177,7 @@ function print_content() {
   if [[ $NUMBERUP -gt 1 ]]; then
     LP+=" -o number-up=$NUMBERUP -o number-up-layout=landscape"
   else
-    if [[ ! -z $LANDSCAPE ]]; then
+    if [[ $LANDSCAPE == "Landscape" ]]; then
       LP+=" -o orientation-requested=5"
     fi
   fi
