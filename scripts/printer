@@ -137,6 +137,22 @@ if [[ -z $1 ]]; then
   exit 1
 fi
 
+# Missing file exception
+function missing_file() {
+  if [[ -z $FILE ]]; then
+    printf "%s\n" "FILE is missing."
+    show_usage
+    exit 1
+  elif [[ $FILE == -* ]]; then
+    printf "%s\n" "$FILE is not a good file: invalid name."
+    show_usage
+    exit 1
+  elif [[ ! -f $(readlink -f $FILE 2> /dev/null) ]]; then
+    printf "%s\n" "$FILE is not a good file: file does not exist."
+    show_usage
+    exit 1
+  fi
+}
 
 # Print function
 function print_content() {
@@ -166,25 +182,15 @@ function print_content() {
     fi
   fi
 
-  if [[ ! -z $FILE ]] && [[ $FILE != -* ]]; then
-    if [[ -f $(readlink -f $FILE) ]]; then
-      LP+=" -- $FILE"
-    else
-      printf "%s\n" "Invalid file: $FILE is not a good file."
-      show_usage
-      exit 1
-    fi
-  else
-    printf "%s\n" "FILE is missing."
-    show_usage
-    exit 1
-  fi
+  LP+=" -- $FILE"
 
   echo $LP
   $LP
 }
 
 if [[ $MENU ]]; then
+  missing_file
+
   PRINTER=$(echo "$PRINTERS" | $XMENU -p "Select printer: ")
   COPIES=$(echo -e "1\n2\n5\n10\n50\n100" | $XMENU -p "Number of copies: ")
   DUPLEX=$(echo -e "No\nLong edge\nShort edge" | $XMENU -p "Choose duplex mode: ")
@@ -193,6 +199,7 @@ if [[ $MENU ]]; then
 
   print_content
 else
+  missing_file
   print_content
 fi
 
