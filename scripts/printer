@@ -90,7 +90,7 @@ while getopts ":hmP:dDn:p:l" opt; do
       ;;
     d)
       if [[ -z $DUPLEX ]]; then
-        DUPLEX="two-sides-long-edge"
+        DUPLEX="Long edge"
       else
         printf "%s\n" "DUPLEX cannot be set twice: invalid argument."
         show_usage
@@ -99,7 +99,7 @@ while getopts ":hmP:dDn:p:l" opt; do
       ;;
     D)
       if [[ -z $DUPLEX ]]; then
-        DUPLEX="two-sides-short-edge"
+        DUPLEX="Short edge"
       else
         printf "%s\n" "DUPLEX cannot be set twice: invalid argument."
         show_usage
@@ -171,7 +171,17 @@ function print_content() {
   fi
 
   if [[ ! -z $DUPLEX ]] && [[ $DUPLEX != "No" ]]; then
-    LP+=" -o sides=$DUPLEX"
+    case $DUPLEX in
+      "Long edge")
+        LP+=" -o sides=two-sided-long-edge"
+        ;;
+      "Short edge")
+        LP+=" -o sides=two-sided-short-edge"
+        ;;
+      *)
+        printf "%s\n" "Invalid argument: $DUPLEX is not a valid command."
+        ;;
+    esac
   fi
 
   if [[ $NUMBERUP -gt 1 ]]; then
