@@ -275,8 +275,12 @@ function toggle_notifications() {
             /usr/bin/pkill -RTMIN+1 i3blocks
             ;;
           3)
+            if [[ $(cat ~/.notifications-state | awk '{print $2}') == "ON" ]]; then
+              stop_notifications
+            else
+              resume_notifications
+            fi
             /usr/bin/pkill -RTMIN+1 i3blocks
-            $NOTIFICATIONS -a "Notifications" "Notifications" "$(cat ~/.notifications-state)"
             ;;
         esac
         ;;
