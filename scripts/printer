@@ -1,0 +1,199 @@
+#! /usr/bin/env bash
+
+#
+# Print from command line.
+#
+# The scripts present some simple options to print from the command line using
+# lp. It also implements a menu-driven function which selects the desired
+# options.
+#
+# Author:     Riccardo Finotello
+# E-mail:     riccardo.finotello@gmail.com
+#
+# Copyright:  2019 - Alessandra Cappati and Riccardo Finotello
+# License:    MIT License
+#
+
+# ------------------------------------
+# OPTIONS, HELP, USAGE AND CHECKS
+# ------------------------------------
+
+# Show usage
+function show_usage() {
+  USAGE="$(basename $0) [-h] [-m] [-P PRINTER] [-d|-D] [-n NUM] [-p NUM] [-l] FILE"
+  printf "\n%s\n%s\n" "Usage:" "    $USAGE"
+}
+
+# Show help
+function show_help() {
+  show_usage
+
+  printf "\n%s\n\n" "Print from the command line."
+  printf "%s\n" "OPTIONS:"
+  printf "%s\n" "    -h          Show this help and exit"
+  printf "%s\n" "    -m          Use X11 menu to print"
+  printf "%s\n" "    -P PRINTER  Select printer"
+  printf "%s\n" "    -d          Duplex printing (long edge)"
+  printf "%s\n" "    -D          Duplex printing (short edge)"
+  printf "%s\n" "    -n NUM      Print NUM copies"
+  printf "%s\n" "    -p NUM      Print NUM pages per sheet"
+  printf "%s\n" "    -l          Print in landscape orientation"
+
+  printf "\n%s\n%s\n\n" \
+    "For bug report and info: riccardo.finotello@gmail.com" \
+    "Copyright (c) 2019 - Alessandra Cappati and Riccardo Finotello - MIT License"
+}
+
+# Check if lpstat and lp are installed
+if [[ ! -z $(which lp) ]] && [[ ! -z $(which lpstat) ]]; then
+  LP=$(which lp)
+  LPSTAT=$(which lpstat)
+else
+  printf "%s\n%s\n%s\n" \
+    "lpstat and lp are not in the PATH." \
+    "You might have to install it. E.g.: sudo apt install lpr." \
+    "This script cannot work without them."
+  exit 1
+fi
+
+# Check if an xmenu is installed
+if [[ ! -z $(which rofi) ]]; then
+  XMENU="$(which rofi) -dmenu"
+elif [[ ! -z $(which dmenu) ]]; then
+  XMENU=$(which dmenu)
+else
+  printf "%s\n%s\n%s\n" \
+    "No X11 menu have been detected." \
+    "You might take into consideration installing one. E.g.: sudo apt install rofi." \
+    "Some of the functionalities will be compromised."
+fi
+
+# DEFAULTS (where necessary) and info
+PRINTER=$($LPSTAT -d | awk -F': ' '{print $2}')
+PRINTERS=$($LPSTAT -p | awk '/^printer/ {print $2}')
+COPIES=1
+NUMBERUP=1
+FILE=${@: -1}
+
+# Parse options
+while getopts ":hmP:dDn:p:l" opt; do
+  case $opt in
+    h)
+      show_help
+      exit 0
+      ;;
+    m)
+      MENU=1
+      ;;
+    P)
+      PRINTER=$OPTARG
+      ;;
+    d)
+      if [[ -z $DUPLEX ]]; then
+        DUPLEX="two-sides-long-edge"
+      else
+        printf "%s\n" "DUPLEX cannot be set twice: invalid argument."
+        show_usage
+        exit 1
+      fi
+      ;;
+    D)
+      if [[ -z $DUPLEX ]]; then
+        DUPLEX="two-sides-short-edge"
+      else
+        printf "%s\n" "DUPLEX cannot be set twice: invalid argument."
+        show_usage
+        exit 1
+      fi
+      ;;
+    n)
+      COPIES=$OPTARG
+      ;;
+    p)
+      NUMBERUP=$OPTARG
+      ;;
+    l)
+      LANDSCAPE="orientation-requested=5"
+      ;;
+    \?)
+      printf "%s\n" "Invalid option: -$OPTARG." >&2
+      show_usage
+      exit 1
+      ;;
+    :)
+      printf "%s\n" "-$OPTARG requires an argument." >&2
+      show_usage
+      exit 1
+      ;;
+  esac
+done
+
+# ------------------------------------
+# COMMANDS AND INFO
+# ------------------------------------
+
+if [[ -z $1 ]]; then
+  show_help
+  exit 1
+fi
+
+
+# Print function
+function print_content() {
+  if [[ $PRINTERS != *$PRINTER* ]]; then
+    printf "%s\n" "$PRINTER is not installed in the system: invalid argument."
+    exit 1
+  elif [[ -z $PRINTER ]]; then
+    printf "%s\n" "You must select a printer to use."
+    exit 1
+  else
+    LP+=" -d $PRINTER"
+  fi
+
+  if [[ ! -z $COPIES ]]; then
+    LP+=" -n $COPIES"
+  fi
+
+  if [[ ! -z $DUPLEX ]] && [[ $DUPLEX != "No" ]]; then
+    LP+=" -o sides=$DUPLEX"
+  fi
+
+  if [[ $NUMBERUP -gt 1 ]]; then
+    LP+=" -o number-up=$NUMBERUP -o number-up-layout=landscape"
+  else
+    if [[ ! -z $LANDSCAPE ]]; then
+      LP+=" -o orientation-requested=5"
+    fi
+  fi
+
+  if [[ ! -z $FILE ]] && [[ $FILE != -* ]]; then
+    if [[ -f $(readlink -f $FILE) ]]; then
+      LP+=" -- $FILE"
+    else
+      printf "%s\n" "Invalid file: $FILE is not a good file."
+      show_usage
+      exit 1
+    fi
+  else
+    printf "%s\n" "FILE is missing."
+    show_usage
+    exit 1
+  fi
+
+  echo $LP
+  $LP
+}
+
+if [[ $MENU ]]; then
+  PRINTER=$(echo "$PRINTERS" | $XMENU -p "Select printer: ")
+  COPIES=$(echo -e "1\n2\n5\n10\n50\n100" | $XMENU -p "Number of copies: ")
+  DUPLEX=$(echo -e "No\nLong edge\nShort edge" | $XMENU -p "Choose duplex mode: ")
+  NUMBERUP=$(echo -e "1\n2\n4" | $XMENU -p "Pages per sheet: ")
+  LANDSCAPE=$(echo -e "Portrait\nLandscape" | $XMENU -o "Orientation: ")
+
+  print_content
+else
+  print_content
+fi
+
+exit 0
