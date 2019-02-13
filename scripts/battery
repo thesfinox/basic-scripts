@@ -110,10 +110,13 @@ case $BATTERYICON in
     ICON="\uf103 \uf242"
     ;;
   battery-full-charging-symbolic)
-    ICON="\uf102 \f240"
+    ICON="\uf102 \uf240"
     ;;
   battery-full-symbolic)
     ICON="\uf103 \uf240"
+    ;;
+  battery-full-charged-symbolic)
+    ICON="\uf118 \uf240"
     ;;
   *)
     printf "%s\n" "N.A."
