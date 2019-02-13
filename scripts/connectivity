@@ -193,7 +193,7 @@ function clickable_widget() {
       if [[ $($NMCLI radio wifi) == "enabled" ]]; then
         LIST=$(nmcli -f SSID,RATE,SIGNAL,BARS,SECURITY device wifi)
         if [[ ! -z $(which rofi) ]]; then
-          CONNECTION=$(echo "$LIST" | tail -n+2 | $(which rofi) \
+          CONNECTION=$(echo "$LIST" | tail -n+2 | $(which rofi) -i \
             -mesg "<span foreground='white'>$(echo "$LIST" | head -n1)</span>" \
             -dmenu -p "Connection: ")
           $NMCLI connection up $CONNECTION &> /dev/null
@@ -206,9 +206,9 @@ function clickable_widget() {
         fi
       else
         if [[ ! -z $(which rofi) ]]; then
-          QUESTION=$(echo "YES|NO" | $(which rofi) -sep "|" -dmenu -p "Turn Wi-Fi on?" -lines 2)
+          QUESTION=$(echo "YES|NO" | $(which rofi) -i -sep "|" -dmenu -p "Turn Wi-Fi on? " -lines 2)
         elif [[ ! -z $(which dmenu) ]]; then
-          QUESTION=$(echo -e "YES\nNO" | $(which dmenu) -p "Turn Wi-Fi on?")
+          QUESTION=$(echo -e "YES\nNO" | $(which dmenu) -p "Turn Wi-Fi on? ")
         fi
         if [[ ! -z $QUESTION ]] && [[ $QUESTION == "YES" ]]; then
           toggle_wifi_state
