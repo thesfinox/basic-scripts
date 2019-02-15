@@ -64,13 +64,13 @@ function clickable_widget() {
   case $BLOCK_BUTTON in
     1)
       $(which pkill) -RTMIN+1 i3blocks
+      $XKB set +1
       $NOTIFICATIONS --icon /usr/share/icons/gnome/48x48/devices/input-keyboard.png "Input Layout" "Current layout: $($XKB print %n)\nAvailable layout(s): $($XKB print %N)"
       ;;
     2)
       $(which pkill) -RTMIN+1 i3blocks
       ;;
     3)
-      $XKB set +1
       $NOTIFICATIONS --icon /usr/share/icons/gnome/48x48/devices/input-keyboard.png "Input Layout" "Current layout: $($XKB print %n)\nAvailable layout(s): $($XKB print %N)"
       $(which pkill) -RTMIN+1 i3blocks
       ;;

@@ -62,7 +62,7 @@ done
 
 # Check existence of "redshift"
 if [[ ! -z $(which redshift) ]]; then
-  REDSHIFT="$(which redshift) -p"
+  REDSHIFT="$(which redshift)"
 else
   printf "%s\n%s\n%s\n" \
     "Redshift is not in your PATH." \
@@ -82,24 +82,23 @@ else
 fi
 
 # Read screen temperature
-if [[ $($REDSHIFT | awk '/^Period/ {print $2}') == "Daytime" ]]; then
-  echo -e "\uf185 $($REDSHIFT | awk '/^Color/ {print $3}')"
+if [[ $($REDSHIFT -p | awk '/^Period/ {print $2}') == "Daytime" ]]; then
+  echo -e "\uf185 $($REDSHIFT -p | awk '/^Color/ {print $3}')"
 else
-  echo -e "\uf186 $($REDSHIFT | awk '/^Color/ {print $3}')"
+  echo -e "\uf186 $($REDSHIFT -p | awk '/^Color/ {print $3}')"
 fi
 
 # Clickable widget
 case $BLOCK_BUTTON in
   1)
     $(which pkill) -RTMIN+1 i3blocks
-    $NOTIFICATIONS -a "Redshift" "Screen temperature" "$($REDSHIFT)"
     ;;
   2)
     $(which pkill) -RTMIN+1 i3blocks
     ;;
   3)
     $(which pkill) -RTMIN+1 i3blocks
-    $NOTIFICATIONS -a "Redshift" "Screen temperature" "$($REDSHIFT)"
+    $NOTIFICATIONS -a "Redshift" "Screen temperature" "$($REDSHIFT -p)"
     ;;
 esac
 
