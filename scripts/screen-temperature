@@ -1,0 +1,106 @@
+#! /usr/bin/env bash
+
+#
+# Read screen temperature.
+#
+# This script is a companion to the "redshift" applet. It reads the screen
+# temperature and the period of the day and outputs very brief information.
+#
+# Author:     Riccardo Finotello
+# E-mail:     riccardo.finotello@gmail.com
+#
+# Copyright:  2019 - Alessandra Cappati and Riccardo Finotello
+# License:    MIT License
+#
+
+# ------------------------------------
+# OPTIONS, HELP, USAGE AND CHECKS
+# ------------------------------------
+
+# Show usage
+function show_usage() {
+  USAGE="$(basename $0) [-h]"
+  printf "\n%s\n%s\n" "Usage:" "    $USAGE"
+}
+
+# Show help
+function show_help() {
+  show_usage
+
+  printf "\n%s\n\n" "Read screen temperature."
+  printf "%s\n" "OPTIONS:"
+  printf "%s\n" "    -h         Show this help and exit"
+
+  printf "\n%s\n%s\n\n" \
+    "For bug report and info: riccardo.finotello@gmail.com" \
+    "Copyright (c) 2019 - Alessandra Cappati and Riccardo Finotello - MIT License"
+}
+
+# Parse options
+while getopts ":h" opt; do
+  case $opt in
+    h)
+      show_help
+      exit 0
+      ;;
+    \?)
+      printf "%s\n" "Invalid option: -$OPTARG." >&2
+      show_usage
+      exit 1
+      ;;
+    :)
+      printf "%s\n" "-$OPTARG requires an argument." >&2
+      show_usage
+      exit 1
+      ;;
+  esac
+done
+
+# ------------------------------------
+# COMMANDS AND INFO
+# ------------------------------------
+
+# Check existence of "redshift"
+if [[ ! -z $(which redshift) ]]; then
+  REDSHIFT="$(which redshift) -p"
+else
+  printf "%s\n%s\n%s\n" \
+    "Redshift is not in your PATH." \
+    "You might have to install it. E.g.: sudo apt install redshift." \
+    "The script entirely relies on the presence of Redshift."
+  exit 1
+fi
+
+# Check if the notification client is in the PATH
+if [[ ! -z $(which notify-send) ]]; then
+  NOTIFICATIONS=$(which notify-send)
+else
+  printf "%s\n%s\n%s\n" \
+    "The notification client is not in the PATH." \
+    "You might have to install it. E.g.: sudo apt install ruby-notify." \
+    "Some of the functionalities of this script may be compromised otherwise."
+fi
+
+# Read screen temperature
+if [[ $($REDSHIFT | awk '/^Period/ {print $2}') == "Daytime" ]]; then
+  echo -e "\uf185 $($REDSHIFT | awk '/^Color/ {print $3}')"
+else
+  echo -e "\uf186 $($REDSHIFT | awk '/^Color/ {print $3}')"
+fi
+
+# Clickable widget
+case $BLOCK_BUTTON in
+  1)
+    $(which pkill) -RTMIN+1 i3blocks
+    $NOTIFICATIONS "Screen temperature" "$($REDSHIFT)"
+    ;;
+  2)
+    $(which pkill) -RTMIN+1 i3blocks
+    ;;
+  3)
+    $(which pkill) -RTMIN+1 i3blocks
+    $NOTIFICATIONS "Screen temperature" "$($REDSHIFT)"
+    ;;
+esac
+
+exit 0

@@ -205,7 +205,9 @@ if [[ $MENU ]]; then
   COPIES=$(echo -e "1\n2\n5\n10\n50\n100" | $XMENU -p "Number of copies: ")
   DUPLEX=$(echo -e "No\nLong edge\nShort edge" | $XMENU -p "Choose duplex mode: ")
   NUMBERUP=$(echo -e "1\n2\n4" | $XMENU -p "Pages per sheet: ")
-  LANDSCAPE=$(echo -e "Portrait\nLandscape" | $XMENU -o "Orientation: ")
+  if [[ $NUMBERUP -le 1 ]]; then
+    LANDSCAPE=$(echo -e "Portrait\nLandscape" | $XMENU -p "Orientation: ")
+  fi
 
   print_content
 else
