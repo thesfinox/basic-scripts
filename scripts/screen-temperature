@@ -92,14 +92,14 @@ fi
 case $BLOCK_BUTTON in
   1)
     $(which pkill) -RTMIN+1 i3blocks
-    $NOTIFICATIONS "Screen temperature" "$($REDSHIFT)"
+    $NOTIFICATIONS -a "Redshift" "Screen temperature" "$($REDSHIFT)"
     ;;
   2)
     $(which pkill) -RTMIN+1 i3blocks
     ;;
   3)
     $(which pkill) -RTMIN+1 i3blocks
-    $NOTIFICATIONS "Screen temperature" "$($REDSHIFT)"
+    $NOTIFICATIONS -a "Redshift" "Screen temperature" "$($REDSHIFT)"
     ;;
 esac
 

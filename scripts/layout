@@ -1,0 +1,122 @@
+#! /usr/bin/env bash
+
+#
+# Read and display current layout.
+#
+# The scripts reads and display the current keyboard layout.
+#
+# Author:     Riccardo Finotello
+# E-mail:     riccardo.finotello@gmail.com
+#
+# Copyright:  2019 - Alessandra Cappati and Riccardo Finotello
+# License:    MIT License
+#
+
+# ------------------------------------
+# OPTIONS, HELP, USAGE AND CHECKS
+# ------------------------------------
+
+# Show usage
+function show_usage() {
+  USAGE="$(basename $0) [-h] [-s] [-l] [-c]"
+  printf "\n%s\n%s\n" "Usage:" "    $USAGE"
+}
+
+# Show help
+function show_help() {
+  show_usage
+
+  printf "\n%s\n\n" "Read and display current layout"
+  printf "%s\n" "OPTIONS:"
+  printf "%s\n" "    -h    Show this help and exit"
+  printf "%s\n" "    -s    Short version"
+  printf "%s\n" "    -l    Long version"
+  printf "%s\n" "    -c    Change layout"
+
+  printf "\n%s\n%s\n\n" \
+    "For bug report and info: riccardo.finotello@gmail.com" \
+    "Copyright (c) 2019 - Alessandra Cappati and Riccardo Finotello - MIT License"
+}
+
+# Check existence of xkblayout-state
+if [[ ! -z $(which xkblayout-state) ]]; then
+  XKB=$(which xkblayout-state)
+else
+  printf "%s\n%s\n%s\n" \
+    "xkblayout-state is not in your PATH." \
+    "You might want to install it. E.g.: git clone https://github.com/nonpop/xkblayout-state." \
+    "The script entirely depends on this utility."
+  exit 1
+fi
+
+# Check if notification client is present
+if [[ ! -z $(which notify-send) ]]; then
+  NOTIFICATIONS=$(which notify-send)
+else
+  printf "%s\n%s\n%s\n" \
+    "The notification client is not in the PATH." \
+    "You might have to install it. E.g.: sudo apt install ruby-notify." \
+    "Some of the functionalities of this script may be compromised otherwise."
+fi
+
+# Clickable widget
+function clickable_widget() {
+  case $BLOCK_BUTTON in
+    1)
+      $(which pkill) -RTMIN+1 i3blocks
+      $NOTIFICATIONS --icon /usr/share/icons/gnome/48x48/devices/input-keyboard.png "Input Layout" "Current layout: $($XKB print %n)\nAvailable layout(s): $($XKB print %N)"
+      ;;
+    2)
+      $(which pkill) -RTMIN+1 i3blocks
+      ;;
+    3)
+      $XKB set +1
+      $NOTIFICATIONS --icon /usr/share/icons/gnome/48x48/devices/input-keyboard.png "Input Layout" "Current layout: $($XKB print %n)\nAvailable layout(s): $($XKB print %N)"
+      $(which pkill) -RTMIN+1 i3blocks
+      ;;
+  esac
+}
+
+# Parse options
+while getopts ":hslc" opt; do
+  case $opt in
+    h)
+      show_help
+      exit 0
+      ;;
+    s)
+      echo -e "\uf024 $($XKB print %s)"
+      clickable_widget
+      exit 0
+      ;;
+    l)
+      echo -e "\uf024 $($XKB print %n)"
+      exit 0
+      ;;
+    c)
+      $XKB set +1
+      echo -e "New layout: $($XKB print %n)"
+      exit 0
+      ;;
+    \?)
+      printf "%s\n" "Invalid option: -$OPTARG." >&2
+      show_usage
+      exit 1
+      ;;
+    :)
+      printf "%s\n" "-$OPTARG requires an argument." >&2
+      show_usage
+      exit 1
+      ;;
+  esac
+done
+
+# ------------------------------------
+# COMMANDS AND INFO
+# ------------------------------------
+
+if [[ -z $1 ]]; then
+  show_help
+  exit 1
+fi
+
