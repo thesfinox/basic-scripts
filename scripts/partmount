@@ -176,11 +176,6 @@ function unmount_block_device() {
     MOUNT=$(echo $SELECTION | awk '{print $NF}')
     RESULT=$($UDISKSCTL unmount -b $MOUNT)
     $NOTIFICATIONS -a "partmount" "Unmounted block device" "$RESULT ($LABEL)"
-    MSG=$(echo -e "No\nYes" | $XMENU -p "Poweroff device?" -lines 2 -u 1)
-    if [[ $MSG == "Yes" ]]; then
-      $UDISKSCTL power-off -b $(echo $MOUNT | sed 's/[p]*[0-9]*$//')
-      $NOTIFICATIONS -a "partmount" "Device poweroff"
-    fi
   fi
 }
 
