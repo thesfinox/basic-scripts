@@ -160,8 +160,14 @@ function mount_block_device() {
     LABEL=$(echo $SELECTION | awk -F '"' '{print $2}')
     MOUNT=$(echo $SELECTION | awk '{print $NF}')
     RESULT=$($UDISKSCTL mount -b $MOUNT)
-    $NOTIFICATIONS -a "partmount" "Mounted block device" "$RESULT ($LABEL)"
-    $TERMINAL -e $FM "/media/riccardo/$LABEL"
+    if [[ ! -z $RESULT ]]; then
+      $NOTIFICATIONS -a "partmount" "Mounted block device" "$RESULT ($LABEL)"
+      $TERMINAL -e $FM "/media/riccardo/$LABEL"
+    else
+      $NOTIFICATIONS -a "partmount" \
+        "Trying to mount block device" \
+        "Unable to mount $LABEL."
+    fi
   fi
 }
 
@@ -175,7 +181,13 @@ function unmount_block_device() {
     LABEL=$(echo $SELECTION | awk -F '"' '{print $2}')
     MOUNT=$(echo $SELECTION | awk '{print $NF}')
     RESULT=$($UDISKSCTL unmount -b $MOUNT)
-    $NOTIFICATIONS -a "partmount" "Unmounted block device" "$RESULT ($LABEL)"
+    if [[ ! -z $RESULT ]]; then
+      $NOTIFICATIONS -a "partmount" "Unmounted block device" "$RESULT ($LABEL)"
+    else
+      $NOTIFICATIONS -a "partmount" \
+        "Trying to unmount block device" \
+        "Unable to unmount $LABEL."
+    fi
   fi
 }
 

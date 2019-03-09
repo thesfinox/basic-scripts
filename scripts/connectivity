@@ -1,11 +1,9 @@
 #! /usr/bin/env bash
 
 #
-# Toggle Wifi on and off and display connection info.
+# Display connection info.
 #
-# The script toggles the connection capabilities on and off. It uses
-# NetworkManager in order to get the current status of the interfaces and to
-# toggle on and off both Wifi and Ethernet connection.
+# The script uses Wicd in order to get the current status of the interfaces.
 #
 # Author:     Riccardo Finotello
 # E-mail:     riccardo.finotello@gmail.com
@@ -34,7 +32,6 @@ function show_help() {
   printf "\n%s\n" "COMMAND:"
   printf "%s\n" "    current    Show currently connected interface(s)"
   printf "%s\n" "    ip         Show IP of the connected interface(s)"
-  printf "%s\n" "    toggle     Toggle Wifi interface on and off"
 
   printf "\n%s\n%s\n\n" \
     "For bug report and info: riccardo.finotello@gmail.com" \
@@ -42,13 +39,13 @@ function show_help() {
 }
 
 # Check if NetworkManager is installed
-if [[ ! -z $(which nmcli) ]]; then
-  NMCLI=$(which nmcli)
+if [[ ! -z $(which wicd-cli) ]]; then
+  WICD=$(which wicd-cli)
 else
   printf "%s\n%s\n%s\n" \
-    "The NetworkManager command line interface is not in the PATH." \
-    "You might have to install it. E.g.: sudo apt install network-manager." \
-    "The NetworkManager CLI is required for this script to run."
+    "Wicd command line interface is not in the PATH." \
+    "You might have to install it. E.g.: sudo apt install wicd-cli." \
+    "Wicd CLI is required for this script to run."
   exit 1
 fi
 
@@ -98,33 +95,32 @@ function show_notification() {
     NOTIFICATIONS="$NOTIFICATIONS --icon $ICON"
   fi
   
-  $NOTIFICATIONS -a "Connections" --category=network "Connection manager" "$($NMCLI -p device $1)"
+  $NOTIFICATIONS -a "Connections" --category=network "Connection manager" "$($WICD -i | grep -v 'Network ID')"
 }
 
 # Show currently connected interface(s)
 function get_wifi_info() {
-  WIFIINFO=$($NMCLI -f IN-USE,SSID,SIGNAL -t dev wifi)
-  WIFINAME=$(printf "%s\n" "$WIFIINFO"| awk -F ':' '/^[*]/ {print $2}')
-  WIFISIGNAL=$(printf "%s\n" "$WIFIINFO"| awk -F ':' '/^[*]/ {print $3}')
+  WIFIINFO=$($WICD -d -y)
+  WIFINAME=$(printf "%s\n" "$WIFIINFO"| awk -F ': ' '/^Essid/ {print $2}')
+  WIFISIGNAL=$(printf "%s\n" "$WIFIINFO"| awk -F ': ' '/^Quality/ {print $2}')
 
-  printf "%s (%s%%)\n" "$WIFINAME" "$WIFISIGNAL"
+  if [[ ! -z $WIFINAME ]] && [[ ! -z $WIFISIGNAL ]]; then
+    printf "%s (%s%%)\n" "$WIFINAME" "$WIFISIGNAL"
+  fi
+}
+
+function get_ethernet_info() {
+  ETHERNET=$($WICD -d -z)
+
+  printf "%s\n" "$ETHERNET"
 }
 
 function show_current() {
-  # Connected interfaces
-  INTERFACES=$($NMCLI -f DEVICE,TYPE,STATE dev status | \
-    awk '/\<connected\>/ {print $1, $2}')
-
-  # Divide Wi-Fi and Ethernet interfaces
-  ETHERNET=$(printf "%s\n" "$INTERFACES" | awk '/\<ethernet\>/ {print $1}')
-  WIFI=$(printf "%s\n" "$INTERFACES" | awk '/\<wifi\>/ {print $1}')
-
-  # Print output
-  if [[ ! -z $WIFI ]] && [[ ! -z $ETHERNET ]]; then
+  if [[ ! -z $(get_wifi_info) ]] && [[ ! -z $(get_ethernet_info) ]]; then
     echo -e "\uf1eb $(get_wifi_info)\n\uf6ff Ethernet"
-  elif [[ ! -z $WIFI ]] && [[ -z $ETHERNET ]]; then
+  elif [[ ! -z $(get_wifi_info) ]] && [[ -z $(get_ethernet_info) ]]; then
     echo -e "\uf1eb $(get_wifi_info)"
-  elif [[ -z $WIFI ]] && [[ ! -z $ETHERNET ]]; then
+  elif [[ -z $(get_wifi_info) ]] && [[ ! -z $(get_ethernet_info) ]]; then
     echo -e "\uf6ff Ethernet"
   else
     echo -e "\ufaa9 No connection"
@@ -133,56 +129,23 @@ function show_current() {
 
 # Show current IP address
 function show_ip() {
-  # Connected interfaces
-  INTERFACES=$($NMCLI -f DEVICE,TYPE,STATE dev status | \
-    awk '/\<connected\>/ {print $1, $2}')
-
-  # Divide Wi-Fi and Ethernet interfaces
-  ETHERNET=$(printf "%s\n" "$INTERFACES" | awk '/\<ethernet\>/ {print $1}')
-  WIFI=$(printf "%s\n" "$INTERFACES" | awk '/\<wifi\>/ {print $1}')
-
-  # Get IP info
-  if [[ ! -z $(which ip ) ]]; then
-    INFO="$(which ip) addr show"
-  elif [[ ! -z $(which ifconfig) ]]; then
-    INFO=$(which ifconfig)
-  else
-    printf "%s\n" \
-      "Unable to show IP address at this time."
-    exit 1
+  if [[ ! -z $(get_wifi_info) ]]; then
+    WIFIIP=$($WICD -d -y | awk -F ': ' '/^IP/ {print $2}')
+  fi
+  if [[ ! -z $(get_ethernet_info) ]]; then
+    ETHERNETIP=$($WICD -d -z | awk -F ': ' '/^IP/ {print $2}')
   fi
 
-  WIFIIP=$($INFO $WIFI | awk '/\<inet\>/ {gsub("/.*",""); print $2}')
-  ETHERNETIP=$($INFO $ETHERNET | awk '/\<inet\>/ {gsub("/.*",""); print $2}')
-
   # Print output
-  if [[ ! -z $WIFI ]] && [[ ! -z $ETHERNET ]]; then
+  if [[ ! -z $WIFIIP ]] && [[ ! -z $ETHERNETIP ]]; then
     echo -e "\uf1eb $WIFIIP\n\uf6ff $ETHERNETIP"
-  elif [[ ! -z $WIFI ]] && [[ -z $ETHERNET ]]; then
+  elif [[ ! -z $WIFIIP ]] && [[ -z $ETHERNETIP ]]; then
     echo -e "\uf1eb $WIFIIP"
-  elif [[ -z $WIFI ]] && [[ ! -z $ETHERNET ]]; then
+  elif [[ -z $WIFIIP ]] && [[ ! -z $ETHERNETIP ]]; then
     echo -e "\uf6ff $ETHERNETIP"
   else
     echo -e "\ufaa9 No connection"
   fi
-}
-
-# Toggle Wifi interface on and off
-function toggle_wifi_state() {
-  STATUS=$($NMCLI radio wifi)
-
-  case $STATUS in
-    enabled)
-      $NMCLI radio wifi off
-      ;;
-    disabled)
-      $NMCLI radio wifi on
-      ;;
-    *)
-      printf "%s\n" "Invalid STATUS: '$1' is not a valid status."
-      exit 1
-      ;;
-  esac
 }
 
 # Clickable widget for i3wm
@@ -190,28 +153,13 @@ function clickable_widget() {
   case $BLOCK_BUTTON in
     1)
       /usr/bin/pkill -RTMIN+1 i3blocks
-      if [[ $($NMCLI radio wifi) == "enabled" ]]; then
-        LIST=$(nmcli -f SSID,RATE,SIGNAL,BARS,SECURITY device wifi)
-        if [[ ! -z $(which rofi) ]]; then
-          CONNECTION=$(echo "$LIST" | tail -n+2 | $(which rofi) -i \
-            -mesg "<span foreground='white'>$(echo "$LIST" | head -n1)</span>" \
-            -dmenu -p "Connection: ")
-          $NMCLI connection up $CONNECTION &> /dev/null
-        elif [[ ! -z $(which dmenu) ]]; then
-          CONNECTION=$(echo "$LIST" | tail -n+2 | $(which dmenu) \
-            -p $(echo "$LIST" | head -n1))
-          $NMCLI connection up $CONNECTION &> /dev/null
-        else
-          show_notification wifi
-        fi
-      else
-        if [[ ! -z $(which rofi) ]]; then
-          QUESTION=$(echo "YES|NO" | $(which rofi) -i -sep "|" -dmenu -p "Turn Wi-Fi on? " -lines 2)
-        elif [[ ! -z $(which dmenu) ]]; then
-          QUESTION=$(echo -e "YES\nNO" | $(which dmenu) -p "Turn Wi-Fi on? ")
-        fi
-        if [[ ! -z $QUESTION ]] && [[ $QUESTION == "YES" ]]; then
-          toggle_wifi_state
+      if [[ ! -z $(which rofi) ]]; then
+        XMENU=$(which rofi)
+        HEAD=$($WICD -l -y | head -n1)
+        LIST=$($WICD -l -y | tail -n+2)
+        CHOICE=$(echo "$LIST" | $XMENU -dmenu -p "Choose Wi-Fi connection: " -mesg "$HEAD")
+        if [[ ! -z $CHOICE ]]; then
+          $WICD -n $(echo $CHOICE | awk '{print $1}') -y -c
         fi
       fi
       ;;
@@ -220,7 +168,7 @@ function clickable_widget() {
       ;;
     3)
       /usr/bin/pkill -RTMIN+1 i3blocks
-      show_notification status
+      show_notification
       ;;
   esac
 }
@@ -234,10 +182,6 @@ case $1 in
     ;;
   ip)
     show_ip
-    exit 0
-    ;;
-  toggle)
-    toggle_wifi_state
     exit 0
     ;;
   *)
