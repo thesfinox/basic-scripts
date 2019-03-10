@@ -34,7 +34,7 @@ function show_help() {
   printf "%s\n" "OPTIONS:"
   printf "%s\n" "    -h            Show this help and exit"
   printf "%s\n" "    -b CMD        Mount/Unmount block devices"
-#   printf "%s\n" "    -a CMD        Mount/Unmount Android devices"
+  printf "%s\n" "    -a CMD        Mount/Unmount Android devices"
   printf "\n%s\n" "CMD:"
   printf "%s\n" "    m or mount    Mount partition/device"
   printf "%s\n" "    u or unmount  Mount partition/device"
@@ -67,12 +67,31 @@ else
     "Some of the functionalities of this script may be compromised otherwise."
 fi
 
-# Check presence of lsblk command
+# Check presence of lsblk command and MTP tools
 if [[ ! -z $(which lsblk) ]]; then
   LSBLK=$(which lsblk)
 else
   printf "%s\n" \
     "We could not find a way to display available partitions."
+  exit 1
+fi
+
+if [[ ! -z $(which mtp-detect) ]]; then
+  MTPDETECT=$(which mtp-detect)
+else
+  printf "%s\n%s\n%s\n" \
+    "We could not find a way to display available partitions." \
+    "You might want to install mtp-detect. E.g.: sudo apt install mtp-detect." \
+    "Some of the functionalities will not be available."
+fi
+
+if [[ ! -z $(which jmtpfs) ]]; then
+  MOUNTMTP=$(which jmtpfs)
+else
+  printf "%s\n%s\n%s\n" \
+    "We could not find a way to mount Android devices." \
+    "You might want to install jmtpfs. E.g.: sudo apt install jmtpfs." \
+    "The script will not work without it."
   exit 1
 fi
 
@@ -188,6 +207,48 @@ function unmount_block_device() {
   fi
 }
 
+# Display Android devices
+function display_android_devices() {
+  CHOICE=$($MTPDETECT 2> /dev/null | awk -F ': ' '/Model/ {print $2}')
+  echo "$CHOICE" | $XMENU -dmenu -p "Choose Android device: "
+}
+
+# Mount Android devices
+function mount_android_device() {
+  CHOICE=$(display_android_devices)
+  BUS=$($MTPDETECT 2> /dev/null | grep -B14 $CHOICE | awk -F ': ' '/Bus location/ {print $2}')
+  DEV=$($MTPDETECT 2> /dev/null | grep -B14 $CHOICE | awk -F ': ' '/Device number/ {print $2}')
+
+  if [[ ! -d $HOME/mnt/$CHOICE ]]; then
+    mkdir -p $HOME/mnt/$CHOICE
+  fi
+  $MOUNTMTP -device=$BUS,$DEV $HOME/mnt/$CHOICE -o allow_other 2> /dev/null
+  if [[ $? == 0 ]]; then
+    $NOTIFICATIONS -a "partmount" "Mounted Android device" "$CHOICE in $HOME/mnt/$CHOICE"
+    $TERMINAL -e $FM "$HOME/mnt/$CHOICE"
+  else
+    $NOTIFICATIONS -a "partmount" \
+      "Trying to mount Android device" \
+      "Unable to mount $CHOICE."
+  fi
+}
+
+# Unmount Android devices
+function unmount_android_device() {
+  CHOICE=$(display_android_devices)
+  $(which fusermount) -u $HOME/mnt/$CHOICE
+  if [[ $? == 0 ]]; then
+    $NOTIFICATIONS -a "partmount" "Unmounted Android device" "$CHOICE from $HOME/mnt/$CHOICE"
+    if [[ -d $HOME/mnt/$CHOICE ]]; then
+      rm -rf $HOME/mnt/$CHOICE
+    fi
+  else
+    $NOTIFICATIONS -a "partmount" \
+      "Trying to unmount Android device" \
+      "Unable to unmount $CHOICE."
+  fi
+}
+
 # Parse options
 while getopts ":hb:a:" opt; do
   case $opt in
@@ -214,9 +275,11 @@ while getopts ":hb:a:" opt; do
     a)
       case $OPTARG in
         m|mount)
+          mount_android_device
           exit 0
           ;;
         u|unmount)
+          unmount_android_device
           exit 0
           ;;
         *)
