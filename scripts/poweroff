@@ -3,8 +3,7 @@
 #
 # Logout/shutdown script.
 #
-# This is a logout/shutdown script. It assumes the presence of systemctl as a
-# system command and i3 window manager as a default: it can (and most probably
+# This is a logout/shutdown script. It assumes i3 window manager as a default: it can (and most probably
 # will) be expanded for other window managers. It also implements a simple
 # interactive menu (rofi/dmenu) to select the command. The lock programme is by
 # default i3lock, while we assume that dunst is the notification server.
@@ -35,7 +34,7 @@ function show_help() {
   printf "%s\n" "    -h            Show this help and exit"
   printf "%s\n" "    -m            Shows an interactive menu"
   printf "%s\n" "    -c COMMAND    Execute COMMAND and exit"
-  printf "%s\n" "    -n STATUS     Chenge the status of the notifications"
+  printf "%s\n" "    -n STATUS     Change the status of the notifications"
   printf "\n%s\n" "COMMAND:"
   printf "%s\n" "    l or lock     Lock the screen"
   printf "%s\n" "    q or logout   Log out from the current session"
@@ -70,17 +69,6 @@ else
     "Some of the functionalities of this script may be compromised otherwise."
 fi
 
-# Check if systemctl is in the PATH
-if [[ ! -z $(which systemctl) ]]; then
-  SYSTEMCTL=$(which systemctl)
-else
-  printf "%s\n%s\n%s\n" \
-    "Systemctl is not in the PATH." \
-    "Systemctl is a critical component of this script." \
-    "The script will not work unless systemctl is in the path."
-  exit 1
-fi
-
 # Check if the lock programme is installed
 if [[ ! -z $(which i3lock) ]]; then
   LOCK=$(which i3lock)
@@ -111,6 +99,17 @@ else
     "The xmenu script is not in the PATH." \
     "You might have to install it. E.g.: sudo apt install rofi." \
     "Some of the functionalities of this script may be compromised otherwise."
+fi
+
+# Check if pm-utils is installed
+if [[ -f /usr/sbin/pm-suspend ]]; then
+  SUSPEND="sudo /usr/sbin/pm-suspend"
+else
+  printf "%s\n%s\n%s\n" \
+    "pm-utils is not in your PATH." \
+    "You might have to install it. E.g.: sudo apt install pm-utils." \
+    "This script cannot work without it."
+  exit 1
 fi
 
 # Stop/start notifications
@@ -161,23 +160,27 @@ function i3logout() {
 function suspend_system() {
   stop_notifications
   screen_lock fork
-  if [[ ! -z $SYSTEMCTL ]]; then
-    $SYSTEMCTL suspend
+  if [[ ! -z $SUSPEND ]]; then
+    $SUSPEND
   fi
   resume_notifications
 }
 
 # Reboot
 function reboot_system() {
-  if [[ ! -z $SYSTEMCTL ]]; then
-    $SYSTEMCTL reboot
+  if [[ ! -z  $(cat /etc/shutdown.allow | grep $(whoami)) ]]; then
+    /sbin/shutdown -a -r now
+  else
+    sudo /sbin/shutdown -r now
   fi
 }
 
 # Poweroff
 function poweroff_system() {
-  if [[ ! -z $SYSTEMCTL ]]; then
-    $SYSTEMCTL poweroff
+  if [[ ! -z  $(cat /etc/shutdown.allow | grep $(whoami)) ]]; then
+    /sbin/shutdown -a -P now
+  else
+    sudo /sbin/shutdown -P now
   fi
 }
 
