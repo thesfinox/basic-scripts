@@ -1,0 +1,83 @@
+#! /usr/bin/env bash
+
+#
+# Attach to existing Tmux session
+#
+# The script lists available Tmux sessions and uses rofi/dmenu to give a choice
+# to attach to one of them.
+#
+# Author:     Riccardo Finotello
+# E-mail:     riccardo.finotello@gmail.com
+#
+# Copyright:  2019 - Riccardo Finotello and Alessandra Cappati
+# License:    MIT License
+#
+
+# ------------------------------------
+# OPTIONS, HELP, USAGE AND CHECKS
+# ------------------------------------
+
+# Show usage
+function show_usage() {
+  USAGE="$(basename $0) [-h]"
+  printf "\n%s\n%s\n" "Usage:" "    $USAGE"
+}
+
+# Show help
+function show_help() {
+  show_usage
+
+  printf "\n%s\n\n" "Attach to existing Tmux session"
+  printf "%s\n" "OPTIONS:"
+  printf "%s\n" "    -h         Show this help and exit"
+
+  printf "\n%s\n%s\n\n" \
+    "For bug report and info: riccardo.finotello@gmail.com" \
+    "Copyright (c) 2019 - Riccardo Finotello and Alessandra Cappati - MIT License"
+}
+
+# Parse options
+while getopts ":h" opt; do
+  case $opt in
+    h)
+      show_help
+      exit 0
+      ;;
+    \?)
+      printf "%s\n" "Invalid option: -$OPTARG." >&2
+      show_usage
+      exit 1
+      ;;
+    :)
+      printf "%s\n" "-$OPTARG requires an argument." >&2
+      show_usage
+      exit 1
+      ;;
+  esac
+done
+
+# ------------------------------------
+# COMMANDS AND INFO
+# ------------------------------------
+
+# Check if Tmux is installed
+if [[ ! -z $(which tmux) ]]; then
+  TMUX=$(which tmux)
+else
+  printf "%s\n%s\n%s\n" \
+    "Tmux is not in your PATH" \
+    "You might want to install it. E.g.: sudo apt install tmux." \
+    "The script will not work without it."
+  exit 1
+fi
+
+# Check if rofi/dmenu is installed
+if [[ ! -z $(which rofi) ]]; then
+  XMENU="$(which rofi) -dmenu"
+elif [[ ! -z $(which dmenu) ]]; then
+  XMENU=$(which dmenu)
+fi
+
+# List detached sessions and ask
+ID=$($TMUX list-sessions | grep -v "attached" | $XMENU -p "Choose session: " | awk -F ': ' '{print $1}')
+$TMUX attach-session -d -t $ID
