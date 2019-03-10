@@ -6,6 +6,8 @@
 # This script implements an X11 menu interface to mount and unmount
 # devices and Android phones/tablets. It uses udisksctl as a backend and
 # mtp-tools for Android devices.
+# In order to mount devices they must be added to fstab in order to ensure
+# security and awareness on potential threats.
 #
 # Author:     Riccardo Finotello
 # E-mail:     riccardo.finotello@gmail.com
@@ -20,7 +22,7 @@
 
 # Show usage
 function show_usage() {
-  USAGE="$(basename $0) [-h] ..."
+  USAGE="$(basename $0) [-h] [-b CMD]"
   printf "\n%s\n%s\n" "Usage:" "    $USAGE"
 }
 
@@ -97,17 +99,6 @@ else
     "Some of the functionalities might be compromised."
 fi
 
-# Check if udisksctl is installed
-if [[ ! -z $(which udisksctl) ]]; then
-  UDISKSCTL=$(which udisksctl)
-else
-  printf "%s\n%s\n%s\n" \
-    "Udisksctl is not in the PATH." \
-    "You might have to install it. E.g.: sudo apt install udisks2" \
-    "Udisksctl is required for this script to work."
-  exit 1
-fi
-
 # Display block devices
 function display_block_devices() {
   DEVS=$($LSBLK -pJo "name,size,label,mountpoint,rm")
@@ -159,10 +150,13 @@ function mount_block_device() {
   else
     LABEL=$(echo $SELECTION | awk -F '"' '{print $2}')
     MOUNT=$(echo $SELECTION | awk '{print $NF}')
-    RESULT=$($UDISKSCTL mount -b $MOUNT)
-    if [[ ! -z $RESULT ]]; then
-      $NOTIFICATIONS -a "partmount" "Mounted block device" "$RESULT ($LABEL)"
-      $TERMINAL -e $FM "/media/riccardo/$LABEL"
+    if [[ ! -d $HOME/mnt/$LABEL ]]; then
+      mkdir -p $HOME/mnt/$LABEL
+    fi
+    mount $MOUNT
+    if [[ $? == 0 ]]; then
+      $NOTIFICATIONS -a "partmount" "Mounted block device" "$MOUNT in $HOME/mnt/$LABEL"
+      $TERMINAL -e $FM "$HOME/mnt/$LABEL"
     else
       $NOTIFICATIONS -a "partmount" \
         "Trying to mount block device" \
@@ -180,9 +174,12 @@ function unmount_block_device() {
   else
     LABEL=$(echo $SELECTION | awk -F '"' '{print $2}')
     MOUNT=$(echo $SELECTION | awk '{print $NF}')
-    RESULT=$($UDISKSCTL unmount -b $MOUNT)
-    if [[ ! -z $RESULT ]]; then
-      $NOTIFICATIONS -a "partmount" "Unmounted block device" "$RESULT ($LABEL)"
+    umount $MOUNT
+    if [[ $? == 0 ]]; then
+      $NOTIFICATIONS -a "partmount" "Unmounted block device" "$MOUNT from $HOME/mnt/$LABEL"
+      if [[ -d $HOME/mnt/$LABEL ]]; then
+        rm -rf $HOME/mnt/$LABEL
+      fi
     else
       $NOTIFICATIONS -a "partmount" \
         "Trying to unmount block device" \
