@@ -103,13 +103,20 @@ fi
 
 # Check if pm-utils is installed
 if [[ -f /usr/sbin/pm-suspend ]]; then
-  SUSPEND="sudo /usr/sbin/pm-suspend"
+  SUSPEND="/usr/sbin/pm-suspend"
 else
   printf "%s\n%s\n%s\n" \
     "pm-utils is not in your PATH." \
     "You might have to install it. E.g.: sudo apt install pm-utils." \
     "This script cannot work without it."
   exit 1
+fi
+
+# Check if gksudo is installed
+if [[ ! -z $(which gksudo) ]]; then
+  SUDO=$(which gksudo)
+else
+  SUDO=$(which sudo)
 fi
 
 # Stop/start notifications
@@ -161,7 +168,7 @@ function suspend_system() {
   stop_notifications
   screen_lock fork
   if [[ ! -z $SUSPEND ]]; then
-    $SUSPEND
+    $SUDO $SUSPEND
   fi
   resume_notifications
 }
@@ -171,7 +178,7 @@ function reboot_system() {
   if [[ ! -z  $(cat /etc/shutdown.allow | grep $(whoami)) ]]; then
     /sbin/shutdown -a -r now
   else
-    sudo /sbin/shutdown -r now
+    $SUDO /sbin/shutdown -r now
   fi
 }
 
@@ -180,7 +187,7 @@ function poweroff_system() {
   if [[ ! -z  $(cat /etc/shutdown.allow | grep $(whoami)) ]]; then
     /sbin/shutdown -a -P now
   else
-    sudo /sbin/shutdown -P now
+    $SUDO /sbin/shutdown -P now
   fi
 }
 
