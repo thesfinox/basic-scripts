@@ -110,7 +110,7 @@ function get_wifi_info() {
 }
 
 function get_ethernet_info() {
-  ETHERNET=$($WICD -d -z)
+  ETHERNET=$($WICD -i -z | grep "Wired")
 
   printf "%s\n" "$ETHERNET"
 }
@@ -133,7 +133,7 @@ function show_ip() {
     WIFIIP=$($WICD -d -y | awk -F ': ' '/^IP/ {print $2}')
   fi
   if [[ ! -z $(get_ethernet_info) ]]; then
-    ETHERNETIP=$($WICD -d -z | awk -F ': ' '/^IP/ {print $2}')
+    ETHERNETIP=$($WICD -i -z | awk -F ': ' '/IP/ {gsub(")",""); print $2}')
   fi
 
   # Print output
