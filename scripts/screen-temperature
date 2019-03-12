@@ -83,9 +83,9 @@ fi
 
 # Read screen temperature
 if [[ $($REDSHIFT -p | awk '/^Period/ {print $2}') == "Daytime" ]]; then
-  echo -e "\uf185 $($REDSHIFT -p | awk '/^Color/ {print $3}')"
+  echo -e "\uf185 $($REDSHIFT -p 2> /dev/null | awk '/^Colour/ {print $3}')"
 else
-  echo -e "\uf186 $($REDSHIFT -p | awk '/^Color/ {print $3}')"
+  echo -e "\uf186 $($REDSHIFT -p 2> /dev/null | awk '/^Colour/ {print $3}')"
 fi
 
 # Clickable widget
@@ -98,7 +98,7 @@ case $BLOCK_BUTTON in
     ;;
   3)
     $(which pkill) -RTMIN+1 i3blocks
-    $NOTIFICATIONS -a "Redshift" "Screen temperature" "$($REDSHIFT -p)"
+    $NOTIFICATIONS -a "Redshift" "Screen temperature" "$($REDSHIFT -p 2> /dev/null)"
     ;;
 esac
 

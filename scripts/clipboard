@@ -94,11 +94,6 @@ function show_clipboard() {
 function send_notification() {
   ARG=${1:0:1}
 
-  if [[ -f /usr/share/icons/gnome/48x48/actions/edit-paste.png ]]; then
-    NOTIFICATIONS="$NOTIFICATIONS -i \
-      /usr/share/icons/gnome/48x48/actions/edit-paste.png"
-  fi
-
   case $ARG in
     p)
       TITLE="Primary buffer"
@@ -113,7 +108,7 @@ function send_notification() {
       ;;
   esac
 
-  $NOTIFICATIONS -a "Clipboard" "$TITLE" "$(show_clipboard $ARG)"
+  $NOTIFICATIONS -i /usr/share/icons/Adwaita/48x48/actions/edit-paste.png -a "Clipboard" "$TITLE" "$(show_clipboard $ARG)"
 }
 
 function show_notification() {
