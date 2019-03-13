@@ -121,7 +121,7 @@ function show_current() {
 
   # Print output
   if [[ ! -z $WIFI ]] && [[ ! -z $ETHERNET ]]; then
-    echo -e "\uf1eb $(get_wifi_info)\n\uf6ff Ethernet"
+    echo -e "\uf6ff Ethernet\n\uf1eb $(get_wifi_info)"
   elif [[ ! -z $WIFI ]] && [[ -z $ETHERNET ]]; then
     echo -e "\uf1eb $(get_wifi_info)"
   elif [[ -z $WIFI ]] && [[ ! -z $ETHERNET ]]; then
