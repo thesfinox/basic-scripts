@@ -67,7 +67,7 @@ else
   printf "%s\n%s\n%s\n" \
     "Redshift is not in your PATH." \
     "You might have to install it. E.g.: sudo apt install redshift." \
-    "The script entirely relies on the presence of Redshift."
+    "The script entirely relies on the presence of Redshift." >&2
   exit 1
 fi
 
@@ -78,7 +78,7 @@ else
   printf "%s\n%s\n%s\n" \
     "The notification client is not in the PATH." \
     "You might have to install it. E.g.: sudo apt install ruby-notify." \
-    "Some of the functionalities of this script may be compromised otherwise."
+    "Some of the functionalities of this script may be compromised otherwise." >&2
 fi
 
 # Read screen temperature

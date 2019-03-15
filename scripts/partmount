@@ -22,7 +22,7 @@
 
 # Show usage
 function show_usage() {
-  USAGE="$(basename $0) [-h] [-b CMD]"
+  USAGE="$(basename $0) [-h] [-b CMD] [-a CMD]"
   printf "\n%s\n%s\n" "Usage:" "    $USAGE"
 }
 
@@ -53,7 +53,7 @@ else
   printf "%s\n%s\n%s\n" \
     "The X11 menu is not in the PATH." \
     "You might want to install it. E.g.: sudo apt install rofi." \
-    "The script entirely relies on its presence."
+    "The script entirely relies on its presence." >&2
   exit 1
 fi
 
@@ -64,7 +64,7 @@ else
   printf "%s\n%s\n%s\n" \
     "The notification client is not in the PATH." \
     "You might have to install it. E.g.: sudo apt install ruby-notify." \
-    "Some of the functionalities of this script may be compromised otherwise."
+    "Some of the functionalities of this script may be compromised otherwise." >&2
 fi
 
 # Check presence of lsblk command and MTP tools
@@ -72,7 +72,7 @@ if [[ ! -z $(which lsblk) ]]; then
   LSBLK=$(which lsblk)
 else
   printf "%s\n" \
-    "We could not find a way to display available partitions."
+    "We could not find a way to display available partitions." >&2
   exit 1
 fi
 
@@ -82,7 +82,7 @@ else
   printf "%s\n%s\n%s\n" \
     "We could not find a way to display available partitions." \
     "You might want to install mtp-detect. E.g.: sudo apt install mtp-detect." \
-    "Some of the functionalities will not be available."
+    "Some of the functionalities will not be available." >&2
 fi
 
 if [[ ! -z $(which jmtpfs) ]]; then
@@ -91,7 +91,7 @@ else
   printf "%s\n%s\n%s\n" \
     "We could not find a way to mount Android devices." \
     "You might want to install jmtpfs. E.g.: sudo apt install jmtpfs." \
-    "The script will not work without it."
+    "The script will not work without it." >&2
   exit 1
 fi
 
@@ -102,7 +102,7 @@ else
   printf "%s\n%s\n%s\n" \
     "The JSON parser is not in the PATH." \
     "You might have to install it. E.g.: sudo apt install jq" \
-    "The JSON parser JQ is required for this script to work."
+    "The JSON parser JQ is required for this script to work." >&2
   exit 1
 fi
 
@@ -115,14 +115,15 @@ else
   printf "%s\n%s\n%s\n" \
     "We could not find a file manager." \
     "You might want to install one. E.g.: sudo apt ranger." \
-    "Some of the functionalities might be compromised."
+    "Some of the functionalities might be compromised." >&2
 fi
 
 # Display block devices
 function display_block_devices() {
   DEVS=$($LSBLK -pJo "name,size,label,mountpoint,rm")
+  $LSBLK
   MOUNTABLE=$(echo $DEVS | \
-    $JQ '.blockdevices | map(select( .rm == "1" ))')
+    $JQ '.blockdevices | map(select( .rm == "true" ))')
   LENGTH=$(echo $MOUNTABLE | $JQ 'length')
 
   TOTALCHILDREN=0
@@ -133,7 +134,7 @@ function display_block_devices() {
     elif [[ $1 == "unmount" ]]; then
       CHILD=$(echo $MOUNTABLE | $JQ ".[$(( counter - 1 ))].children | map(select( .mountpoint != null ))")
     else
-      printf "%s\n" "Invalid argument: $1 is not a valid command."
+      printf "%s\n" "Invalid argument: $1 is not a valid command." >&2
       exit 1
     fi
     CHILDLENGTH=$(echo $CHILD | $JQ 'length')
@@ -267,7 +268,7 @@ while getopts ":hb:a:" opt; do
           exit 0
           ;;
         *)
-          printf "%s\n" "Invalid argument: $OPTARG is not a good command."
+          printf "%s\n" "Invalid argument: $OPTARG is not a good command." >&2
           exit 1
           ;;
       esac
@@ -283,7 +284,7 @@ while getopts ":hb:a:" opt; do
           exit 0
           ;;
         *)
-          printf "%s\n" "Invalid argument: $OPTARG is not a good command."
+          printf "%s\n" "Invalid argument: $OPTARG is not a good command." >&2
           exit 1
           ;;
       esac

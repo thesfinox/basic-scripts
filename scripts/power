@@ -35,7 +35,7 @@ function show_help() {
   printf "%s\n" "    -h            Show this help and exit"
   printf "%s\n" "    -m            Shows an interactive menu"
   printf "%s\n" "    -c COMMAND    Execute COMMAND and exit"
-  printf "%s\n" "    -n STATUS     Chenge the status of the notifications"
+  printf "%s\n" "    -n STATUS     Change the status of the notifications"
   printf "\n%s\n" "COMMAND:"
   printf "%s\n" "    l or lock     Lock the screen"
   printf "%s\n" "    q or logout   Log out from the current session"
@@ -61,13 +61,13 @@ if [[ ! -z $(which dunst) ]]; then
     printf "%s\n%s\n%s\n" \
       "The notification client is not in the PATH." \
       "You might have to install it. E.g.: sudo apt install ruby-notify." \
-      "Some of the functionalities of this script may be compromised otherwise."
+      "Some of the functionalities of this script may be compromised otherwise." >&2
   fi
 else
   printf "%s\n%s\n%s\n" \
     "The default notification client is not installed." \
     "You might have to install it. E.g.: sudo apt install dunst." \
-    "Some of the functionalities of this script may be compromised otherwise."
+    "Some of the functionalities of this script may be compromised otherwise." >&2
 fi
 
 # Check if systemctl is in the PATH
@@ -77,7 +77,7 @@ else
   printf "%s\n%s\n%s\n" \
     "Systemctl is not in the PATH." \
     "Systemctl is a critical component of this script." \
-    "The script will not work unless systemctl is in the path."
+    "The script will not work unless systemctl is in the path." >&2
   exit 1
 fi
 
@@ -88,7 +88,7 @@ else
   printf "%s\n%s\n%s\n" \
     "The default screen locker is not in the PATH." \
     "You might have to install it. E.g.: sudo apt install i3lock." \
-    "Some of the functionalities of this script may be compromised otherwise."
+    "Some of the functionalities of this script may be compromised otherwise." >&2
 fi
 
 # Check if the exit script is installed
@@ -98,7 +98,7 @@ else
   printf "%s\n%s\n%s\n" \
     "The default window manager is i3." \
     "We have not detected the correct logout script (i3-msg)." \
-    "Some of the functionalities of this script may be compromised."
+    "Some of the functionalities of this script may be compromised." >&2
 fi
 
 # Check if the xmenu script is installed
@@ -110,7 +110,7 @@ else
   printf "%s\n%s\n%s\n" \
     "The xmenu script is not in the PATH." \
     "You might have to install it. E.g.: sudo apt install rofi." \
-    "Some of the functionalities of this script may be compromised otherwise."
+    "Some of the functionalities of this script may be compromised otherwise." >&2
 fi
 
 # Stop/start notifications
@@ -144,7 +144,7 @@ function screen_lock() {
       *)
         printf "%s\n%s\n" \
           "Invalid argument: '$1' is not a valid argument." \
-          "You must choose between 'fork' and 'not-fork'."
+          "You must choose between 'fork' and 'not-fork'." >&2
         ;;
     esac
   fi
@@ -202,7 +202,7 @@ function parse_command() {
       poweroff_system
       ;;
     *)
-      printf "%s\n" "Invalid COMMAND: '$1' is not a valid argument."
+      printf "%s\n" "Invalid COMMAND: '$1' is not a valid argument." >&2
       show_help
       exit 1
       ;;
@@ -243,7 +243,7 @@ function show_menu() {
         poweroff_system
         ;;
       *)
-        printf "%s\n" "Invalid argument: '$RESP' is not a valid command."
+        printf "%s\n" "Invalid argument: '$RESP' is not a valid command." >&2
         ;;
     esac
   fi
@@ -280,7 +280,7 @@ function toggle_notifications() {
         esac
         ;;
       *)
-        printf "%s\n" "Invalid argument: '$1' is not a valid STATUS"
+        printf "%s\n" "Invalid argument: '$1' is not a valid STATUS" >&2
         show_help
         exit 1
         ;;

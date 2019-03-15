@@ -4,7 +4,7 @@
 # Read battery info.
 #
 # This script reads battery information and displays it in the shortest possible
-# form. It uses UPOWER to get battery info and displays notifications in case
+# form. It uses ACPI to get battery info and displays notifications in case
 # the level drops below 10%.
 #
 # Author:     Riccardo Finotello
@@ -62,13 +62,13 @@ done
 # ------------------------------------
 
 # Check the presence of UPOWER
-if [[ ! -z $(which upower) ]]; then
-  INFO=$(which upower)
+if [[ ! -z $(which acpi) ]]; then
+  INFO=$(which acpi)
 else
   printf "%s\n%s\n%s\n" \
-    "upower is not in the PATH." \
-    "You might have to add it. E.g.: sudo apt install upower." \
-    "upower is a critical component: the script will not work without it."
+    "acpi is not in the PATH." \
+    "You might have to add it. E.g.: sudo pacman -Syu acpi." \
+    "acpi is a critical component: the script will not work without it." >&2
   exit 1
 fi
 
@@ -79,52 +79,67 @@ else
   printf "%s\n%s\n%s\n" \
     "The notification client is not in the PATH." \
     "You might have to add it. E.g.: sudo apt install ruby-notify." \
-    "Some of the functionalities might be compromised."
+    "Some of the functionalities might be compromised." >&2
 fi
 
 # Read battery info
-BATTERY="BAT0"
-BATTERYPATH=$($INFO -e | grep $BATTERY)
-STATUS=$($INFO -i $BATTERYPATH)
+BATTERY="Battery 0"
+BATTERYSTATUS=$($INFO -b | grep "$BATTERY" | awk -F ': ' '{print $2}' | tr -d ',')
 
-PERCENTAGE=$(echo "$STATUS" | awk '/percentage/ {print $2}')
-BATTERYICON=$(echo "$STATUS" | awk '/icon-name/ {print $2}' | tr -d "'")
+STATUS=$(echo $BATTERYSTATUS | awk '{print $1}')
+PERCENTAGE=$(echo $BATTERYSTATUS | awk '{gsub("%",""); print $2}')
+TIME=$(echo $BATTERYSTATUS | awk '{print $3}')
 
-case $BATTERYICON in
-  battery-caution-charging-symbolic)
-    ICON="\uf102 \uf60b"
-    ;;
-  battery-caution-symbolic)
-    ICON="\uf103 \uf60b"
-    ;;
-  battery-low-charging-symbolic)
-    ICON="\uf102 \uf244"
-    ;;
-  battery-low-symbolic)
-    ICON="\uf103 \uf244"
-    ;;
-  battery-good-charging-symbolic)
-    ICON="\uf102 \uf242"
-    ;;
-  battery-good-symbolic)
-    ICON="\uf103 \uf242"
-    ;;
-  battery-full-charging-symbolic)
-    ICON="\uf102 \uf240"
-    ;;
-  battery-full-symbolic)
-    ICON="\uf103 \uf240"
-    ;;
-  battery-full-charged-symbolic)
-    ICON="\uf118 \uf240"
-    ;;
-  *)
-    printf "%s\n" "N.A."
-    exit 1
-    ;;
-esac
+if [[ $PERCENTAGE -gt 95 && $STATUS != Discharging ]]; then
+  ICON="\uf118 \uf240"
+elif [[ $PERCENTAGE -gt 85 ]]; then
+  case $STATUS in
+    Discharging)
+      ICON="\uf103 \uf240"
+      ;;
+    *)
+      ICON="\uf102 \uf240"
+      ;;
+  esac
+elif [[ $PERCENTAGE -gt 40 ]]; then
+  case $STATUS in
+    Discharging)
+      ICON="\uf103 \uf242"
+      ;;
+    *)
+      ICON="\uf102 \uf242"
+      ;;
+  esac
+elif [[ $PERCENTAGE -gt 25 ]]; then
+  case $STATUS in
+    Discharging)
+      ICON="\uf103 \uf244"
+      ;;
+    *)
+      ICON="\uf102 \uf244"
+      ;;
+  esac
+elif [[ $PERCENTAGE -gt 10 ]]; then
+  case $STATUS in
+    Discharging)
+      ICON="\uf103 \uf60b"
+      ;;
+    *)
+      ICON="\uf102 \uf60b"
+      ;;
+  esac
+else
+  case $STATUS in
+    Discharging)
+      ICON="\uf103 CAUTION!"
+      ;;
+    *)
+      ICON="\uf102 CAUTION!"
+      ;;
+  esac
+fi
 
-echo -e "$PERCENTAGE $ICON"
+echo -e "$PERCENTAGE% $ICON"
 
 case $BLOCK_BUTTON in
   1)
@@ -135,7 +150,7 @@ case $BLOCK_BUTTON in
     ;;
   3)
     /usr/bin/pkill -RTMIN+1 i3blocks
-    $NOTIFICATIONS -a "Battery" "Battery info" "$STATUS"
+    $NOTIFICATIONS -a "Battery" "Battery info" "Status: $STATUS\nCapacity: $PERCENTAGE%\nTime remaining: $TIME"
     ;;
 esac
 

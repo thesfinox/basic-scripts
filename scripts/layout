@@ -45,7 +45,7 @@ else
   printf "%s\n%s\n%s\n" \
     "xkblayout-state is not in your PATH." \
     "You might want to install it. E.g.: git clone https://github.com/nonpop/xkblayout-state." \
-    "The script entirely depends on this utility."
+    "The script entirely depends on this utility." >&2
   exit 1
 fi
 
@@ -56,7 +56,7 @@ else
   printf "%s\n%s\n%s\n" \
     "The notification client is not in the PATH." \
     "You might have to install it. E.g.: sudo apt install ruby-notify." \
-    "Some of the functionalities of this script may be compromised otherwise."
+    "Some of the functionalities of this script may be compromised otherwise." >&2
 fi
 
 # Clickable widget

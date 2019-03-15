@@ -48,7 +48,7 @@ else
   printf "%s\n%s\n%s\n" \
     "The NetworkManager command line interface is not in the PATH." \
     "You might have to install it. E.g.: sudo apt install network-manager." \
-    "The NetworkManager CLI is required for this script to run."
+    "The NetworkManager CLI is required for this script to run." >&2
   exit 1
 fi
 
@@ -88,7 +88,7 @@ else
   printf "%s\n%s\n%s\n" \
     "The notification client is not in the PATH." \
     "You might have to install it. E.g.: sudo apt install ruby-notify." \
-    "Some of the functionalities of this script may be compromised otherwise."
+    "Some of the functionalities of this script may be compromised otherwise." >&2
 fi
 
 # Clickable block when using i3blocks in i3wm
@@ -148,7 +148,7 @@ function show_ip() {
     INFO=$(which ifconfig)
   else
     printf "%s\n" \
-      "Unable to show IP address at this time."
+      "Unable to show IP address at this time." >&2
     exit 1
   fi
 
@@ -179,7 +179,7 @@ function toggle_wifi_state() {
       $NMCLI radio wifi on
       ;;
     *)
-      printf "%s\n" "Invalid STATUS: '$1' is not a valid status."
+      printf "%s\n" "Invalid STATUS: '$1' is not a valid status." >&2
       exit 1
       ;;
   esac
@@ -241,7 +241,7 @@ case $1 in
     exit 0
     ;;
   *)
-    printf "%s\n" "Invalid COMMAND: $1 is not a valid argument."
+    printf "%s\n" "Invalid COMMAND: $1 is not a valid argument." >&2
     show_help
     exit 1
     ;;

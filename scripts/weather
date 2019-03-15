@@ -72,7 +72,7 @@ else
   printf "%s\n%s\n%s\n" \
     "curl is not in the PATH." \
     "You might have to install it. E.g.: sudo apt install curl" \
-    "curl is required for this script to work."
+    "curl is required for this script to work." >&2
   exit 1
 fi
 
@@ -82,7 +82,7 @@ else
   printf "%s\n%s\n%s\n" \
     "The JSON parser is not in the PATH." \
     "You might have to install it. E.g.: sudo apt install jq" \
-    "The JSON parser JQ is required for this script to work."
+    "The JSON parser JQ is required for this script to work." >&2
   exit 1
 fi
 
@@ -124,7 +124,7 @@ function json_report() {
     "shower rain")
       ICON="\ue309"
       ;;
-    rain)
+    rain|"light rain")
       ICON="\ue308"
       ;;
     thunderstorm)
@@ -150,12 +150,12 @@ function json_report() {
         echo -e "$NAME: $TEMP°C ($MAIN) $ICON"
         ;;
       *)
-        printf "%s\n" "Invalid argument: unable to parse weather info."
+        printf "%s\n" "Invalid argument: unable to parse weather info." >&2
         exit 1
         ;;
     esac
   else
-    printf "%s\n" "$ICON"
+    printf "%s\n" "$ICON" >&2
     exit 1
   fi
 }

@@ -67,7 +67,7 @@ else
   printf "%s\n%s\n%s\n" \
     "Tmux is not in your PATH" \
     "You might want to install it. E.g.: sudo apt install tmux." \
-    "The script will not work without it."
+    "The script will not work without it." >&2
   exit 1
 fi
 

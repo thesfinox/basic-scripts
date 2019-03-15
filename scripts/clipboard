@@ -47,7 +47,7 @@ else
   printf "%s\n%s\n%s\n" \
     "The clipboard manager is not in the PATH." \
     "You might have to install it. E.g.: sudo apt install clipit." \
-    "The clipboard manager is required for this script to run."
+    "The clipboard manager is required for this script to run." >&2
   exit 1
 fi
 
@@ -58,7 +58,7 @@ else
   printf "%s\n%s\n%s\n" \
     "The QR code generator is not in the PATH." \
     "You might have to install it. E.g.: sudo apt install python-qrenconde." \
-    "Some of the functionalities of this script may be compromised otherwise."
+    "Some of the functionalities of this script may be compromised otherwise." >&2
 fi
 
 # Check if the notification client is installed
@@ -68,7 +68,7 @@ else
   printf "%s\n%s\n%s\n" \
     "The notification client is not in the PATH." \
     "You might have to install it. E.g.: sudo apt install ruby-notify." \
-    "Some of the functionalities of this script may be compromised otherwise."
+    "Some of the functionalities of this script may be compromised otherwise." >&2
 fi
 
 # Show clipboard content
@@ -81,7 +81,7 @@ function show_clipboard() {
       printf "%s\n" "$($CLIPBOARD -c)"
       ;;
     *)
-      printf "%s\n" "Wrong BUF type: $1 is not a good BUF."
+      printf "%s\n" "Wrong BUF type: $1 is not a good BUF." >&2
       show_usage
       exit 1
       ;;
@@ -103,7 +103,7 @@ function send_notification() {
       ;;
     *)
       printf "%s\n" \
-        "Internal error: parsed wrong argument."
+        "Internal error: parsed wrong argument." >&2
       exit 1
       ;;
   esac
@@ -118,7 +118,7 @@ function show_notification() {
       send_notification $1
       ;;
     *)
-      printf "%s\n" "Wrong BUF type: $1 is not a good BUF."
+      printf "%s\n" "Wrong BUF type: $1 is not a good BUF." >&2
       show_usage
       exit 1
       ;;
@@ -152,7 +152,7 @@ function show_qr() {
       choose_img_viewer $1
       ;;
     *)
-      printf "%s\n" "Wrong BUF type: $1 is not a good BUF."
+      printf "%s\n" "Wrong BUF type: $1 is not a good BUF." >&2
       show_usage
       exit 1
       ;;
@@ -176,7 +176,7 @@ while getopts ":hc:n:q:" opt; do
         exit 0
       else
         printf "%s\n" \
-          "It is impossible to show notifications at this time."
+          "It is impossible to show notifications at this time." >&2
         exit 1
       fi
       ;;
@@ -186,7 +186,7 @@ while getopts ":hc:n:q:" opt; do
         exit 0
       else
         printf "%s\n" \
-          "It is impossible to encode a QR code at this time."
+          "It is impossible to encode a QR code at this time." >&2
         exit 1
       fi
       ;;

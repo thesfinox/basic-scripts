@@ -52,7 +52,7 @@ else
   printf "%s\n%s\n%s\n" \
     "lpstat and lp are not in the PATH." \
     "You might have to install it. E.g.: sudo apt install lpr." \
-    "This script cannot work without them."
+    "This script cannot work without them." >&2
   exit 1
 fi
 
@@ -65,7 +65,7 @@ else
   printf "%s\n%s\n%s\n" \
     "No X11 menu have been detected." \
     "You might take into consideration installing one. E.g.: sudo apt install rofi." \
-    "Some of the functionalities will be compromised."
+    "Some of the functionalities will be compromised." >&2
 fi
 
 # DEFAULTS (where necessary) and info
@@ -92,7 +92,7 @@ while getopts ":hmP:dDn:p:l" opt; do
       if [[ -z $DUPLEX ]]; then
         DUPLEX="Long edge"
       else
-        printf "%s\n" "DUPLEX cannot be set twice: invalid argument."
+        printf "%s\n" "DUPLEX cannot be set twice: invalid argument." >&2
         show_usage
         exit 1
       fi
@@ -101,7 +101,7 @@ while getopts ":hmP:dDn:p:l" opt; do
       if [[ -z $DUPLEX ]]; then
         DUPLEX="Short edge"
       else
-        printf "%s\n" "DUPLEX cannot be set twice: invalid argument."
+        printf "%s\n" "DUPLEX cannot be set twice: invalid argument." >&2
         show_usage
         exit 1
       fi
@@ -140,15 +140,15 @@ fi
 # Missing file exception
 function missing_file() {
   if [[ -z $FILE ]]; then
-    printf "%s\n" "FILE is missing."
+    printf "%s\n" "FILE is missing." >&2
     show_usage
     exit 1
   elif [[ $FILE == -* ]]; then
-    printf "%s\n" "$FILE is not a good file: invalid name."
+    printf "%s\n" "$FILE is not a good file: invalid name." >&2
     show_usage
     exit 1
   elif [[ ! -f $(readlink -f $FILE 2> /dev/null) ]]; then
-    printf "%s\n" "$FILE is not a good file: file does not exist."
+    printf "%s\n" "$FILE is not a good file: file does not exist." >&2
     show_usage
     exit 1
   fi
@@ -157,10 +157,10 @@ function missing_file() {
 # Print function
 function print_content() {
   if [[ $PRINTERS != *$PRINTER* ]]; then
-    printf "%s\n" "$PRINTER is not installed in the system: invalid argument."
+    printf "%s\n" "$PRINTER is not installed in the system: invalid argument." >&2
     exit 1
   elif [[ -z $PRINTER ]]; then
-    printf "%s\n" "You must select a printer to use."
+    printf "%s\n" "You must select a printer to use." >&2
     exit 1
   else
     LP+=" -d $PRINTER"
@@ -179,7 +179,7 @@ function print_content() {
         LP+=" -o sides=two-sided-short-edge"
         ;;
       *)
-        printf "%s\n" "Invalid argument: $DUPLEX is not a valid command."
+        printf "%s\n" "Invalid argument: $DUPLEX is not a valid command." >&2
         ;;
     esac
   fi
