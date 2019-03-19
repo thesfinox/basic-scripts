@@ -161,7 +161,7 @@ function display_block_devices() {
   ENTRIES=$(echo $ENTRIES | sed 's/$/Abort/g')
   
   SELECTION=$(echo -e $ENTRIES | $XMENU \
-    -p "Select block device: " \
+    -p "Select block device" \
     -mesg "<span foreground='white'>LABEL    SIZE    DEV</span>" \
     -lines $(( TOTALCHILDREN + 1 )) -u $TOTALCHILDREN)
 
@@ -218,7 +218,7 @@ function unmount_block_device() {
 # Display Android devices
 function display_android_devices() {
   CHOICE=$($MTPDETECT 2> /dev/null | awk -F ': ' '/Model/ {print $2}')
-  echo "$CHOICE" | $XMENU -dmenu -p "Choose Android device: "
+  echo "$CHOICE" | $XMENU -dmenu -p "Choose Android device"
 }
 
 # Mount Android devices

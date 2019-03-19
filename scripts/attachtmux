@@ -79,5 +79,5 @@ elif [[ ! -z $(which dmenu) ]]; then
 fi
 
 # List detached sessions and ask
-ID=$($TMUX list-sessions | grep -v "attached" | $XMENU -p "Choose session: " | awk -F ': ' '{print $1}')
+ID=$($TMUX list-sessions | grep -v "attached" | $XMENU -p "Choose session" | awk -F ': ' '{print $1}')
 $TMUX attach-session -d -t $ID

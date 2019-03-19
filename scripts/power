@@ -214,7 +214,7 @@ function show_menu() {
   ACTIONS="Lock\nExit\nStandby\nReboot\nShutdown"  
   if [[ $XMENU == "$(which rofi)" ]]; then
     URGENT="3,4"
-    PROMPT="Action: "
+    PROMPT="Action"
     MESG="<span foreground='white'>This is the <b>poweroff</b> menu. Choose your action: </span>"
     RESP=$(echo -e $ACTIONS | $XMENU -i -u $URGENT -dmenu -p "$PROMPT" -location 2 -width 100 -lines 5 -mesg "$MESG")
   elif [[ $MENU == "$(which dmenu)" ]]; then
