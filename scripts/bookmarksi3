@@ -77,7 +77,8 @@ function edit_file() {
 function selection_menu() {
   if [[ -n $XMENU ]]; then
     CHOICE=$(awk -F';' '{print $1 " <small><i>(" $2 ")</i></small>"}' $CONFIG | \
-      $XMENU -dmenu -markup-rows -p "Select URL: " | \
+      sort | \
+      $XMENU -dmenu -markup-rows -i -p "Select URL" | \
       sed 's/.*(\(.*\)).*/\1/g' )
   fi
 
