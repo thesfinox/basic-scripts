@@ -181,7 +181,11 @@ function mount_block_device() {
     if [[ $? == 0 ]]; then
       $NOTIFICATIONS -a "partmount" "Mount block device" "$MSG"
       DIRECTORY=$(echo $MSG | awk -F'at ' '{print $2}' | tr -d '.')
-      $TERMINAL -e $FM "$DIRECTORY"
+      if [[ -x $(which st) ]]; then
+        $(which st) -e $FM "$DIRECTORY"
+      else
+        $TERMINAL -e $FM "$DIRECTORY"
+      fi
     else
       $NOTIFICATIONS -a "partmount" \
         "Trying to mount block device" \
@@ -229,7 +233,11 @@ function mount_android_device() {
   $MOUNTMTP -device=$BUS,$DEV $HOME/mnt/$CHOICE -o allow_other 2> /dev/null
   if [[ $? == 0 ]]; then
     $NOTIFICATIONS -a "partmount" "Mounted Android device" "$CHOICE in $HOME/mnt/$CHOICE"
-    $TERMINAL -e $FM "$HOME/mnt/$CHOICE"
+    if [[ -x $(which st) ]]; then
+      $(which st) -e $FM "$HOME/mnt/$CHOICE"
+    else
+      $TERMINAL -e $FM "$HOME/mnt/$CHOICE"
+    fi
   else
     $NOTIFICATIONS -a "partmount" \
       "Trying to mount Android device" \
