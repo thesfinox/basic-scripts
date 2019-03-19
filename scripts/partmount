@@ -6,8 +6,6 @@
 # This script implements an X11 menu interface to mount and unmount
 # devices and Android phones/tablets. It uses udisksctl as a backend and
 # mtp-tools for Android devices.
-# In order to mount devices they must be added to fstab in order to ensure
-# security and awareness on potential threats.
 #
 # Author:     Riccardo Finotello
 # E-mail:     riccardo.finotello@gmail.com
@@ -76,6 +74,16 @@ else
   exit 1
 fi
 
+if [[ -x $(which udisksctl) ]]; then
+  MNT=$(which udisksctl)
+else
+  printf "%s\n%s\n%s\n" \
+    "The udisksctl command is not in the PATH." \
+    "You might have to install it. E.g.: sudo apt install udisks2." \
+    "The script will not work without it." >&2
+  exit 1
+fi
+
 if [[ ! -z $(which mtp-detect) ]]; then
   MTPDETECT=$(which mtp-detect)
 else
@@ -121,9 +129,8 @@ fi
 # Display block devices
 function display_block_devices() {
   DEVS=$($LSBLK -pJo "name,size,label,mountpoint,rm")
-  $LSBLK
   MOUNTABLE=$(echo $DEVS | \
-    $JQ '.blockdevices | map(select( .rm == "true" ))')
+    $JQ '.blockdevices | map(select( .rm == true ))')
   LENGTH=$(echo $MOUNTABLE | $JQ 'length')
 
   TOTALCHILDREN=0
@@ -152,7 +159,7 @@ function display_block_devices() {
   done
 
   ENTRIES=$(echo $ENTRIES | sed 's/$/Abort/g')
-
+  
   SELECTION=$(echo -e $ENTRIES | $XMENU \
     -p "Select block device: " \
     -mesg "<span foreground='white'>LABEL    SIZE    DEV</span>" \
@@ -170,13 +177,11 @@ function mount_block_device() {
   else
     LABEL=$(echo $SELECTION | awk -F '"' '{print $2}')
     MOUNT=$(echo $SELECTION | awk '{print $NF}')
-    if [[ ! -d $HOME/mnt/$LABEL ]]; then
-      mkdir -p $HOME/mnt/$LABEL
-    fi
-    mount $MOUNT
+    MSG=$($MNT mount -b $MOUNT)
     if [[ $? == 0 ]]; then
-      $NOTIFICATIONS -a "partmount" "Mounted block device" "$MOUNT in $HOME/mnt/$LABEL"
-      $TERMINAL -e $FM "$HOME/mnt/$LABEL"
+      $NOTIFICATIONS -a "partmount" "Mount block device" "$MSG"
+      DIRECTORY=$(echo $MSG | awk -F'at ' '{print $2}' | tr -d '.')
+      $TERMINAL -e $FM "$DIRECTORY"
     else
       $NOTIFICATIONS -a "partmount" \
         "Trying to mount block device" \
@@ -194,12 +199,10 @@ function unmount_block_device() {
   else
     LABEL=$(echo $SELECTION | awk -F '"' '{print $2}')
     MOUNT=$(echo $SELECTION | awk '{print $NF}')
-    umount $MOUNT
+    MSG=$($MNT unmount -b $MOUNT)
     if [[ $? == 0 ]]; then
-      $NOTIFICATIONS -a "partmount" "Unmounted block device" "$MOUNT from $HOME/mnt/$LABEL"
-      if [[ -d $HOME/mnt/$LABEL ]]; then
-        rm -rf $HOME/mnt/$LABEL
-      fi
+      $NOTIFICATIONS -a "partmount" "Unmount block device" "$MSG"
+      $MNT power-off -b $MOUNT
     else
       $NOTIFICATIONS -a "partmount" \
         "Trying to unmount block device" \

@@ -47,7 +47,7 @@ else
   printf "%s\n%s\n%s\n" \
     "The X menu rofi in not in your path." \
     "You might want to add it. E.g.: sudo pacman -Syu rofi" \
-    "The script will not work without it."
+    "The script will not work without it." >&2
   exit 1
 fi
 
