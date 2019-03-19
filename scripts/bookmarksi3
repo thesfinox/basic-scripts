@@ -1,0 +1,147 @@
+#! /usr/bin/env bash
+
+#
+# Open bookmarked URLs.
+#
+# This script reads and edits a bookmark file and has the user select and open
+# one of them in a browser session.
+#
+# Author:     Riccardo Finotello
+# E-mail:     riccardo.finotello@gmail.com
+#
+# Copyright:  2019 - Riccardo Finotello and Alessandra Cappati
+# License:    MIT License
+#
+
+# ------------------------------------
+# OPTIONS, HELP, USAGE AND CHECKS
+# ------------------------------------
+
+# Show usage
+function show_usage() {
+  USAGE="$(basename $0) [-h] [-e] [-u URL && -n NAME]"
+  printf "\n%s\n%s\n" "Usage:" "    $USAGE"
+}
+
+# Show help
+function show_help() {
+  show_usage
+
+  printf "\n%s\n\n" "Open bookmarked URLs."
+  printf "%s\n" "OPTIONS:"
+  printf "%s\n" "    -h         Show this help and exit"
+  printf "%s\n" "    -e         Edit the bookmark file"
+  printf "%s\n" "    -m         Open selection menu"
+  printf "%s\n" "    -u URL     URL of the bookmark"
+  printf "%s\n" "    -n NAME    NAME of the bookmark"
+
+  printf "\n%s\n%s\n\n" \
+    "For bug report and info: riccardo.finotello@gmail.com" \
+    "Copyright (c) 2019 - Riccardo Finotello and Alessandra Cappati - MIT License"
+}
+
+# Check if the X11 menu is installed
+if [[ -x $(which rofi) ]]; then
+  XMENU=$(which rofi)
+else
+  printf "%s\n%s\n%s\n" \
+    "The X menu rofi in not in your path." \
+    "You might want to add it. E.g.: sudo pacman -Syu rofi" \
+    "The script will not work without it."
+  exit 1
+fi
+
+# Choose the configuration file
+if [[ -f $HOME/.config/bookmarksi3/bookmarks.list ]]; then
+  CONFIG=$HOME/.config/bookmarksi3/bookmarks.list
+elif [[ -f $(xdg-user-dir CONFIG)/bookmarksi3/bookmarks.list ]]; then
+  CONFIG=$(xdg-user-dir CONFIG)/bookmarksi3/bookmarks.list
+else
+  mkdir -p $HOME/.config/bookmarksi3 2> /dev/null
+  touch $HOME/.config/bookmarksi3/bookmarks.list
+  CONFIG=$HOME/.config/bookmarksi3/bookmarks.list
+fi
+
+# Function to edit the file
+function edit_file() {
+  if [[ -n $EDITOR ]]; then
+    $EDITOR $CONFIG
+  elif [[ -x $(which xdg-open) ]]; then
+    $(which xdg-open) $CONFIG
+  else
+    $(which nano) $CONFIG
+  fi
+}
+
+# Open selection menu
+function selection_menu() {
+  if [[ -n $XMENU ]]; then
+    CHOICE=$(awk -F';' '{print $1 " <small><i>(" $2 ")</i></small>"}' $CONFIG | \
+      $XMENU -dmenu -markup-rows -p "Select URL: " | \
+      sed 's/.*(\(.*\)).*/\1/g' )
+  fi
+
+  if [[ -n $CHOICE ]]; then
+    if [[ -n $BROWSER ]]; then
+      $BROWSER $CHOICE
+    elif [[ -x $(which xdg-open) ]]; then
+      $(which xdg-open) $CHOICE
+    else
+      printf "%s\n" $CHOICE
+    fi
+  fi
+}
+
+# Parse options
+while getopts ":hemu:n:" opt; do
+  case $opt in
+    h)
+      show_help
+      exit 0
+      ;;
+    e)
+      edit_file
+      exit 0
+      ;;
+    m)
+      selection_menu
+      exit 0
+      ;;
+    u)
+      URL=$OPTARG
+      ;;
+    n)
+      NAME=$OPTARG
+      ;;
+    \?)
+      printf "%s\n" "Invalid option: -$OPTARG." >&2
+      show_usage
+      exit 1
+      ;;
+    :)
+      printf "%s\n" "-$OPTARG requires an argument." >&2
+      show_usage
+      exit 1
+      ;;
+  esac
+done
+
+# ------------------------------------
+# COMMANDS AND INFO
+# ------------------------------------
+
+if [[ -z $1 ]]; then
+  show_help
+  exit 1
+fi
+
+if [[ ! -n $URL ]]; then
+  printf "%s\n" "Missing URL!"
+  exit 1
+fi
+
+if [[ ! -n $NAME ]]; then
+  printf "%s\n" "Missing name/description!"
+fi
+
+echo "$NAME;$URL" >> $CONFIG
