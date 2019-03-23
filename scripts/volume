@@ -62,10 +62,10 @@ function get_state() {
 function toggle_state() {
   case $1 in
     o|output)
-      $ALSA -c 0 -- sset Master toggle &> /dev/null
+      $ALSA -c 0 -D pulse -- sset Master toggle &> /dev/null
       ;;
     i|input)
-      $ALSA -c 0 -- sset Capture toggle &> /dev/null
+      $ALSA -c 0 -D pulse -- sset Capture toggle &> /dev/null
       ;;
     *)
       printf "%s\n" "Wrong device: $1 is not a good device." >&2
@@ -79,7 +79,7 @@ function get_volume() {
   case $1 in
     o|output)
       if [[ $(get_state Master) -eq 1 ]]; then
-        VOLUME=$($ALSA -c 0 -- sget Master | \
+        VOLUME=$($ALSA -c 0 -D pulse -- sget Master | \
           awk '/Mono/ {gsub("[%]",""); print $4}' | tr -d '[]\n')
         if [[ $VOLUME -gt 70 ]]; then
           echo -e "\ufa7d $VOLUME%"
@@ -94,7 +94,7 @@ function get_volume() {
       ;;
     i|input)
       if [[ $(get_state Capture) -eq 1 ]]; then
-        VOLUME=$($ALSA -c 0 -- sget Capture | \
+        VOLUME=$($ALSA -c 0 -D pulse -- sget Capture | \
           awk '/Front Left/ {gsub("[%]",""); print $5}' | tr -d '[]\-\n')
         if [[ $VOLUME -gt 0 ]]; then
           echo -e "\uf130 $VOLUME%"
@@ -117,13 +117,13 @@ function increase_volume() {
       if [[ $(get_state Master) -eq 0 ]]; then
         toggle_state output
       fi
-      $ALSA -c 0 -- sset Master 5%+ &> /dev/null
+      $ALSA -c 0 -D pulse -- sset Master 5%+ &> /dev/null
       ;;
     i|input)
       if [[ $(get_state Capture) -eq 0 ]]; then
         toggle_state input
       fi
-      $ALSA -c 0 -- sset Capture 5%+ &> /dev/null
+      $ALSA -c 0 -D pulse -- sset Capture 5%+ &> /dev/null
       ;;
     *)
       printf "%s\n" "Wrong device: $1 is not a good device." >&2
@@ -138,13 +138,13 @@ function decrease_volume() {
       if [[ $(get_state Master) -eq 0 ]]; then
         toggle_state output
       fi
-      $ALSA -c 0 -- sset Master 5%- &> /dev/null
+      $ALSA -c 0 -D pulse -- sset Master 5%- &> /dev/null
       ;;
     i|input)
       if [[ $(get_state Capture) -eq 0 ]]; then
         toggle_state input
       fi
-      $ALSA -c 0 -- sset Capture 5%- &> /dev/null
+      $ALSA -c 0 -D pulse -- sset Capture 5%- &> /dev/null
       ;;
     *)
       printf "%s\n" "Wrong device: $1 is not a good device." >&2
