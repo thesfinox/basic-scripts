@@ -1,0 +1,191 @@
+#! /usr/bin/env bash
+
+#
+# Show some status info.
+#
+# This script provides a simple and quick way to show information about the
+# current system, such as OS, CPU load, RAM consumption, thermals, etc.
+#
+# Author:     Riccardo Finotello
+# E-mail:     riccardo.finotello@gmail.com
+#
+# Copyright:  2019 - Riccardo Finotello and Alessandra Cappati
+# License:    MIT License
+#
+
+# ------------------------------------
+# OPTIONS, HELP, USAGE AND CHECKS
+# ------------------------------------
+
+# Show usage
+function show_usage() {
+  USAGE="$(basename $0) [-h] ..."
+  printf "\n%s\n%s\n" "Usage:" "    $USAGE"
+}
+
+# Show help
+function show_help() {
+  show_usage
+
+  printf "\n%s\n\n" "Show some status info."
+  printf "%s\n" "OPTIONS:"
+  printf "%s\n" "    -h   Show this help and exit"
+  printf "%s\n" "    -t   Show CPU thermal reading"
+  printf "%s\n" "    -l   Show CPU load avg. (last minute)"
+  printf "%s\n" "    -r   Show available RAM"
+  printf "%s\n" "    -o   Show OS name and kernel"
+  printf "%s\n" "    -g   Show active graphic card"
+
+  printf "\n%s\n%s\n\n" \
+    "For bug report and info: riccardo.finotello@gmail.com" \
+    "Copyright (c) 2019 - Riccardo Finotello and Alessandra Cappati - MIT License"
+}
+
+# Check if lm-sensors is installed
+if [[ -x $(which sensors) ]]; then
+  SENSORS=$(which sensors)
+else
+  printf "%s\n%s\n%s\n" \
+    "The sensor utility is not in the PATH." \
+    "You might have to add it. E.g.: sudo pacman -Syu lm-sensors." \
+    "The sensor utility is a critical component: the script will not work without it." >&2
+  exit 1
+fi
+
+# Check if LSB release is installed
+if [[ -x $(which lsb_release) ]]; then
+  LSB=$(which lsb_release)
+else
+  printf "%s\n%s\n%s\n" \
+    "lsb_release is not in the PATH." \
+    "You might have to add it. E.g.: sudo pacman -Syu lsb-release." \
+    "lsb_release is a critical component: the script will not work without it." >&2
+  exit 1
+fi
+
+# Check if NVidia is installed
+if [[ -x $(which nvidia-smi) ]]; then
+  NVIDIA=$(which nvidia-smi)
+else
+  printf "%s\n%s\n%s\n" \
+    "nvidia-smi is not in the PATH." \
+    "You might have to add it. E.g.: sudo pacman -Syu nvidia-settings." \
+    "Some of the functionalities will not work without it." >&2
+fi
+
+# Show thermal readings
+function show_thermals() {
+  if [[ -n $SENSORS ]]; then
+    TEMP=$($SENSORS -u | grep -A1 "Package id 0" | \
+      awk -F': ' '/temp1_input/ {print int($2)}')
+    echo -e "\uf8c7 $TEMP°C"
+  fi
+}
+
+# Show CPU load (last minute)
+function show_load() {
+  LOAD=$(cat /proc/loadavg | awk '{print $1 "%"}')
+  echo -e "\uf437 $LOAD"
+}
+
+# Show available RAM
+function show_ram() {
+  RAM=$(free -h | awk '/^Mem/ {print $7}')
+  echo -e "\ufb19 $RAM"
+}
+
+# Show OS info
+function show_os() {
+  if [[ -n $LSB ]]; then
+    OS=$($LSB -d | awk -F':' '{print $2}' | tr -d '\t')
+    KERN=$(uname -r)
+    case $OS in
+      "Arch Linux")
+        echo -e "\uf303 $KERN"
+        ;;
+      Ubuntu)
+        echo -e "\ue73a $KERN"
+        ;;
+      Debian)
+        echo -e "\ue77d $KERN"
+        ;;
+      Manjaro)
+        echo -e "\ue312 $KERN"
+        ;;
+      openSUSE)
+        echo -e "\uf314 $KERN"
+        ;;
+      centOS)
+        echo -e "\uf304 $KERN"
+        ;;
+      Fedora)
+        echo -e "\uf30a $KERN"
+        ;;
+      *)
+        echo -e "$OS - $KERN"
+        ;;
+    esac
+  fi
+}
+
+# Show current CPU in use
+function show_gpu() {
+  if [[ -n $NVIDIA ]]; then
+    GPU=$($NVIDIA -q -d PIDS | grep "Process ID")
+    if [[ -n $GPU ]]; then
+      echo -e "\uf1b2 NVidia"
+    else
+      echo -e "\uf0c8 Intel"
+    fi
+  fi
+}
+
+# Parse options
+while getopts ":htlrog" opt; do
+  case $opt in
+    h)
+      show_help
+      exit 0
+      ;;
+    t)
+      show_thermals
+      exit 0
+      ;;
+    l)
+      show_load
+      exit 0
+      ;;
+    r)
+      show_ram
+      exit 0
+      ;;
+    o)
+      show_os
+      exit 0
+      ;;
+    g)
+      show_gpu
+      exit 0
+      ;;
+    \?)
+      printf "%s\n" "Invalid option: -$OPTARG." >&2
+      show_usage
+      exit 1
+      ;;
+    :)
+      printf "%s\n" "-$OPTARG requires an argument." >&2
+      show_usage
+      exit 1
+      ;;
+  esac
+done
+
+# ------------------------------------
+# COMMANDS AND INFO
+# ------------------------------------
+
+if [[ -z $1 ]]; then
+  show_help
+  exit 1
+fi
+
