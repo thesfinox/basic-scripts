@@ -117,13 +117,13 @@ function increase_volume() {
       if [[ $(get_state Master) -eq 0 ]]; then
         toggle_state output
       fi
-      $ALSA -c 0 -- sset Master 3%+ &> /dev/null
+      $ALSA -c 0 -- sset Master 5%+ &> /dev/null
       ;;
     i|input)
       if [[ $(get_state Capture) -eq 0 ]]; then
         toggle_state input
       fi
-      $ALSA -c 0 -- sset Capture 3%+ &> /dev/null
+      $ALSA -c 0 -- sset Capture 5%+ &> /dev/null
       ;;
     *)
       printf "%s\n" "Wrong device: $1 is not a good device." >&2
@@ -138,13 +138,13 @@ function decrease_volume() {
       if [[ $(get_state Master) -eq 0 ]]; then
         toggle_state output
       fi
-      $ALSA -c 0 -- sset Master 3%- &> /dev/null
+      $ALSA -c 0 -- sset Master 5%- &> /dev/null
       ;;
     i|input)
       if [[ $(get_state Capture) -eq 0 ]]; then
         toggle_state input
       fi
-      $ALSA -c 0 -- sset Capture 3%- &> /dev/null
+      $ALSA -c 0 -- sset Capture 5%- &> /dev/null
       ;;
     *)
       printf "%s\n" "Wrong device: $1 is not a good device." >&2
