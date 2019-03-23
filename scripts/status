@@ -19,7 +19,7 @@
 
 # Show usage
 function show_usage() {
-  USAGE="$(basename $0) [-h] [-t] [-l] [-r] [-o] [-g]"
+  USAGE="$(basename $0) [-h] [-t] [-l] [-r] [-d] [-o] [-g]"
   printf "\n%s\n%s\n" "Usage:" "    $USAGE"
 }
 
@@ -33,6 +33,7 @@ function show_help() {
   printf "%s\n" "    -t   Show CPU thermal reading"
   printf "%s\n" "    -l   Show CPU load avg. (last minute)"
   printf "%s\n" "    -r   Show available RAM"
+  printf "%s\n" "    -d   Show disk usage"
   printf "%s\n" "    -o   Show OS name and kernel"
   printf "%s\n" "    -g   Show active graphic card"
 
@@ -94,6 +95,13 @@ function show_ram() {
   echo -e "\ufb19 $RAM"
 }
 
+# Show disk usage
+function show_disk() {
+  DFHOME=$(df -h | awk '/\/home$/ {print $5}')
+  DFROOT=$(df -h | awk '/\/$/ {print $5}')
+  echo -e "\ue216 $DFROOT \uf015 $DFHOME"
+}
+
 # Show OS info
 function show_os() {
   if [[ -n $LSB ]]; then
@@ -141,7 +149,7 @@ function show_gpu() {
 }
 
 # Parse options
-while getopts ":htlrog" opt; do
+while getopts ":htlrdog" opt; do
   case $opt in
     h)
       show_help
@@ -157,6 +165,10 @@ while getopts ":htlrog" opt; do
       ;;
     r)
       show_ram
+      exit 0
+      ;;
+    d)
+      show_disk
       exit 0
       ;;
     o)
