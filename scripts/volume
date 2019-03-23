@@ -1,0 +1,227 @@
+#! /usr/bin/env bash
+
+#
+# Get volume levels.
+#
+# Get volume levels of the internal ALSA device.
+#
+# Author:     Riccardo Finotello
+# E-mail:     riccardo.finotello@gmail.com
+#
+# Copyright:  2019 - Riccardo Finotello and Alessandra Cappati
+# License:    MIT License
+#
+
+# ------------------------------------
+# OPTIONS, HELP, USAGE AND CHECKS
+# ------------------------------------
+
+# Show usage
+function show_usage() {
+  USAGE="$(basename $0) [-h] [-g DEV] [-G] [-t DEV] [-i|-d]"
+  printf "\n%s\n%s\n" "Usage:" "    $USAGE"
+}
+
+# Show help
+function show_help() {
+  show_usage
+
+  printf "\n%s\n\n" "Get volume levels."
+  printf "%s\n" "OPTIONS:"
+  printf "%s\n" "    -h             Show this help and exit"
+  printf "%s\n" "    -g DEV         Get volume of the DEV"
+  printf "%s\n" "    -G             Get volume of I/O devices"
+  printf "%s\n" "    -t DEV         Toggle DEV"
+  printf "%s\n" "    -i DEV         Increase volume of DEV"
+  printf "%s\n" "    -d DEV         Decrease volume of DEV"
+  printf "\n%s\n" "DEV:"
+  printf "%s\n" "     i or input    Input device"
+  printf "%s\n" "     o or output   Output device"
+
+  printf "\n%s\n%s\n\n" \
+    "For bug report and info: riccardo.finotello@gmail.com" \
+    "Copyright (c) 2019 - Riccardo Finotello and Alessandra Cappati - MIT License"
+}
+
+# ALSA utility
+ALSA=$(which amixer)
+
+# Get mute/unmute
+function get_state() {
+  if [[ -n $($ALSA -c 0 -- sget $1 | grep -w off) ]] || \
+    [[ -n $($ALSA -c 0 -- sget $1 | grep -w 0%) ]]; then
+    STATE=0
+  else
+    STATE=1
+  fi
+
+  echo $STATE
+}
+
+# Toggle mute/unmute
+function toggle_state() {
+  case $1 in
+    o|output)
+      $ALSA -c 0 -- sset Master toggle &> /dev/null
+      ;;
+    i|input)
+      $ALSA -c 0 -- sset Capture toggle &> /dev/null
+      ;;
+    *)
+      printf "%s\n" "Wrong device: $1 is not a good device." >&2
+      exit 1
+      ;;
+  esac
+}
+
+# Get volume
+function get_volume() {
+  case $1 in
+    o|output)
+      if [[ $(get_state Master) -eq 1 ]]; then
+        VOLUME=$($ALSA -c 0 -- sget Master | \
+          awk '/Mono/ {gsub("[%]",""); print $4}' | tr -d '[]\n')
+        if [[ $VOLUME -gt 70 ]]; then
+          echo -e "\ufa7d $VOLUME%"
+        elif [[ $VOLUME -gt 35 ]]; then
+          echo -e "\ufa7f $VOLUME%"
+        else
+          echo -e "\ufa7e $VOLUME%"
+        fi
+      else
+        echo -e "\ufc5d"
+      fi
+      ;;
+    i|input)
+      if [[ $(get_state Capture) -eq 1 ]]; then
+        VOLUME=$($ALSA -c 0 -- sget Capture | \
+          awk '/Front Left/ {gsub("[%]",""); print $5}' | tr -d '[]\-\n')
+        if [[ $VOLUME -gt 0 ]]; then
+          echo -e "\uf130 $VOLUME%"
+        fi
+      else
+        echo -e "\uf131"
+      fi
+      ;;
+    *)
+      printf "%s\n" "Wrong device: $1 is not a good device." >&2
+      exit 1
+      ;;
+  esac
+}
+
+# Increase/Decrease volume
+function increase_volume() {
+  case $1 in
+    o|output)
+      if [[ $(get_state Master) -eq 0 ]]; then
+        toggle_state output
+      fi
+      $ALSA -c 0 -- sset Master 3%+ &> /dev/null
+      ;;
+    i|input)
+      if [[ $(get_state Capture) -eq 0 ]]; then
+        toggle_state input
+      fi
+      $ALSA -c 0 -- sset Capture 3%+ &> /dev/null
+      ;;
+    *)
+      printf "%s\n" "Wrong device: $1 is not a good device." >&2
+      exit 1
+      ;;
+  esac
+}
+
+function decrease_volume() {
+  case $1 in
+    o|output)
+      if [[ $(get_state Master) -eq 0 ]]; then
+        toggle_state output
+      fi
+      $ALSA -c 0 -- sset Master 3%- &> /dev/null
+      ;;
+    i|input)
+      if [[ $(get_state Capture) -eq 0 ]]; then
+        toggle_state input
+      fi
+      $ALSA -c 0 -- sset Capture 3%- &> /dev/null
+      ;;
+    *)
+      printf "%s\n" "Wrong device: $1 is not a good device." >&2
+      exit 1
+      ;;
+  esac
+}
+
+# i3bar clickable widget
+function clickable_widget() {
+  case $BLOCK_BUTTON in
+    1)
+      /usr/bin/pkill -RTMIN+1 i3blocks
+      if [[ -x $(which alsamixer) && -x $(which st) ]]; then
+        $(which st) -e $(which alsamixer)
+      fi
+      ;;
+    2)
+      /usr/bin/pkill -RTMIN+1 i3blocks
+      ;;
+    3)
+      /usr/bin/pkill -RTMIN+1 i3blocks
+      if [[ -x $(which notify-send) ]]; then
+        $(which notify-send) -a "Volume control" "Volume info" \
+          "$($ALSA -c 0 -- sget Master)\n$($ALSA -c 0 -- sget Capture)"
+      fi
+      ;;
+  esac
+}
+
+# Parse options
+while getopts ":hg:Gt:i:d:" opt; do
+  case $opt in
+    h)
+      show_help
+      exit 0
+      ;;
+    g)
+      get_volume $OPTARG
+      exit 0
+      ;;
+    G)
+      echo $(get_volume input) $(get_volume output)
+      clickable_widget
+      exit 0
+      ;;
+    t)
+      toggle_state $OPTARG
+      exit 0
+      ;;
+    i)
+      increase_volume $OPTARG
+      exit 0
+      ;;
+    d)
+      decrease_volume $OPTARG
+      exit 0
+      ;;
+    \?)
+      printf "%s\n" "Invalid option: -$OPTARG." >&2
+      show_usage
+      exit 1
+      ;;
+    :)
+      printf "%s\n" "-$OPTARG requires an argument." >&2
+      show_usage
+      exit 1
+      ;;
+  esac
+done
+
+# ------------------------------------
+# COMMANDS AND INFO
+# ------------------------------------
+
+if [[ -z $1 ]]; then
+  show_help
+  exit 1
+fi
+
