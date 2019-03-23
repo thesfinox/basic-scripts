@@ -19,7 +19,7 @@
 
 # Show usage
 function show_usage() {
-  USAGE="$(basename $0) [-h] ..."
+  USAGE="$(basename $0) [-h] [-t] [-l] [-r] [-o] [-g]"
   printf "\n%s\n%s\n" "Usage:" "    $USAGE"
 }
 
