@@ -93,11 +93,6 @@ fi
 
 # Clickable block when using i3blocks in i3wm
 function show_notification() {
-  ICON="/usr/share/icons/gnome/48x48/status/network-idle.png"
-  if [[ -f $ICON  ]]; then
-    NOTIFICATIONS="$NOTIFICATIONS --icon $ICON"
-  fi
-  
   $NOTIFICATIONS -a "Connections" --category=network "Connection manager" "$($NMCLI -p device $1)"
 }
 
