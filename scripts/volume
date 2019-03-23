@@ -80,7 +80,7 @@ function get_volume() {
     o|output)
       if [[ $(get_state Master) -eq 1 ]]; then
         VOLUME=$($ALSA -c 0 -D pulse -- sget Master | \
-          awk '/Mono/ {gsub("[%]",""); print $4}' | tr -d '[]\n')
+          awk '/Front Left/ {gsub("[%]",""); print $5}' | tr -d '[]\-\n')
         if [[ $VOLUME -gt 70 ]]; then
           echo -e "\ufa7d $VOLUME%"
         elif [[ $VOLUME -gt 35 ]]; then
