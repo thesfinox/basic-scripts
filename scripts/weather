@@ -108,8 +108,6 @@ function json_report() {
   MAIN=$(get_report | $JQ --raw-output '. | .weather[0].main')
   DESC=$(get_report | $JQ --raw-output '. | .weather[0].description')
 
-  echo $DESC
-
   case $DESC in
     "clear sky")
       ICON="\ue30d"
