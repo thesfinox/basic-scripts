@@ -87,7 +87,7 @@ fi
 MANPAGE=$(man -k . | $XMENU -p "Choose the man page" | awk '{print $1}')
 
 if [[ $MANPAGE ]]; then
-  man -Tps $MANPAGE | $PDFOPEN -
+  man -Tpdf $MANPAGE | $PDFOPEN -
 fi
 
 exit 0
