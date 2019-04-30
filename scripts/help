@@ -1,0 +1,91 @@
+#! /usr/bin/env bash
+
+#
+# Show dmenu/rofi list of all man pages and display them.
+#
+# Search through the Linux man pages and display a X menu selector. Then show
+# the man page.
+#
+# Author:     Riccardo Finotello
+# E-mail:     riccardo.finotello@gmail.com
+#
+# Copyright:  2019 - Riccardo Finotello and Alessandra Cappati
+# License:    MIT License
+#
+
+# ------------------------------------
+# OPTIONS, HELP, USAGE AND CHECKS
+# ------------------------------------
+
+# Show usage
+function show_usage() {
+  USAGE="$(basename $0) [-h]"
+  printf "\n%s\n%s\n" "Usage:" "    $USAGE"
+}
+
+# Show help
+function show_help() {
+  show_usage
+
+  printf "\n%s\n\n" "Show dmenu/rofi list of all man pages and display them."
+  printf "%s\n" "OPTIONS:"
+  printf "%s\n" "    -h         Show this help and exit"
+
+  printf "\n%s\n%s\n\n" \
+    "For bug report and info: riccardo.finotello@gmail.com" \
+    "Copyright (c) 2019 - Riccardo Finotello and Alessandra Cappati - MIT License"
+}
+
+# Parse options
+while getopts ":h" opt; do
+  case $opt in
+    h)
+      show_help
+      exit 0
+      ;;
+    \?)
+      printf "%s\n" "Invalid option: -$OPTARG." >&2
+      show_usage
+      exit 1
+      ;;
+    :)
+      printf "%s\n" "-$OPTARG requires an argument." >&2
+      show_usage
+      exit 1
+      ;;
+  esac
+done
+
+# Check if dmenu/rofi are installed
+if [[ -x $(which rofi) ]]; then
+  XMENU="$(which rofi) -dmenu"
+elif [[ -x $(which dmenu) ]]; then
+  XMENU=$(which dmenu)
+else
+  printf "%s\n%s\n%s\n" \
+    "No X11 menu have been found." \
+    "You should consider installing one. E.g.: sudo pacman -S rofi." \
+    "The script will not continue without it."
+  exit 1
+fi
+
+# Check if Zathura is installed
+if [[ -x $(which zathura) ]]; then
+  PDFOPEN=$(which zathura)
+else
+  printf "%s\n%s\n%s\n" \
+    "Zathura has not been found." \
+    "You should consider installing it. E.g.: sudo pacman -S zathura." \
+    "The script will not continue without it."
+  exit 1
+fi
+
+# ------------------------------------
+# COMMANDS AND INFO
+# ------------------------------------
+
+MANPAGE=$(man -k . | $XMENU -p "Choose the man page" | awk '{print $1}')
+
+man -Tps $MANPAGE | $PDFOPEN -
+
+exit 0
