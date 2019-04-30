@@ -22,7 +22,7 @@
 
 # Show usage
 function show_usage() {
-  USAGE="$(basename $0) [-h] [-m] [-c COMMAND] [-n STATUS]"
+  USAGE="$(basename $0) [-h] [-m] [-c COMMAND] [-n STATUS] [-t]"
   printf "\n%s\n%s\n" "Usage:" "    $USAGE"
 }
 
@@ -36,6 +36,7 @@ function show_help() {
   printf "%s\n" "    -m            Shows an interactive menu"
   printf "%s\n" "    -c COMMAND    Execute COMMAND and exit"
   printf "%s\n" "    -n STATUS     Change the status of the notifications"
+  printf "%s\n" "    -t            Toggle the status of the notifications"
   printf "\n%s\n" "COMMAND:"
   printf "%s\n" "    l or lock     Lock the screen"
   printf "%s\n" "    q or logout   Log out from the current session"
@@ -249,8 +250,17 @@ function show_menu() {
   fi
 }
 
-# Toggle notifications
+# Toggle notification state
 function toggle_notifications() {
+  if [[ $(cat ~/.notifications-state | awk '{print $2}') == "ON" ]]; then
+    stop_notifications
+  else
+    resume_notifications
+  fi
+}
+
+# Toggle notifications
+function change_notifications() {
   if [[ ! -z $NOTIFICATIONS ]]; then
     case $1 in
       p|pause)
@@ -264,11 +274,7 @@ function toggle_notifications() {
 
         case $BLOCK_BUTTON in
           1)
-            if [[ $(cat ~/.notifications-state | awk '{print $2}') == "ON" ]]; then
-              stop_notifications
-            else
-              resume_notifications
-            fi
+            toggle_notifications
             /usr/bin/pkill -RTMIN+1 i3blocks
             ;;
           2)
@@ -289,7 +295,7 @@ function toggle_notifications() {
 }
 
 # Parse options
-while getopts ":hmc:n:" opt; do
+while getopts ":hmc:n:t" opt; do
   case $opt in
     h)
       show_help
@@ -304,7 +310,11 @@ while getopts ":hmc:n:" opt; do
       exit 0
       ;;
     n)
-      toggle_notifications $OPTARG
+      change_notifications $OPTARG
+      exit 0
+      ;;
+    t)
+      toggle_notifications
       exit 0
       ;;
     \?)
