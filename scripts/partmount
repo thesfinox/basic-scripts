@@ -218,17 +218,21 @@ function mount_android_device() {
   NO=$(echo $CHOICE | awk -F ': ' '{print $1}')
   DEV=$(echo $CHOICE | awk -F ': ' '{print $2}')
 
-  if [[ ! -d $HOME/mnt/android_$NO ]]; then
-    mkdir -p $HOME/mnt/android_$NO
-  fi
-  $MTPDETECT --device $NO $HOME/mnt/android_$NO 2> /dev/null
-  if [[ $? == 0 ]]; then
-    $NOTIFICATIONS -a "partmount" "Mounted Android device" "$DEV in $HOME/mnt/android_$NO"
-    $TERMINAL -e $FM "$HOME/mnt/android_$NO"
+  if [[ -z $SELECTION ]] || [[ $SELECTION == "Abort" ]]; then
+    exit 1
   else
-    $NOTIFICATIONS -a "partmount" \
-      "Trying to mount Android device" \
-      "Unable to mount $DEV."
+    if [[ ! -d $HOME/mnt/android_$NO ]]; then
+      mkdir -p $HOME/mnt/android_$NO
+    fi
+    $MTPDETECT --device $NO $HOME/mnt/android_$NO 2> /dev/null
+    if [[ $? == 0 ]]; then
+      $NOTIFICATIONS -a "partmount" "Mounted Android device" "$DEV in $HOME/mnt/android_$NO"
+      $TERMINAL -e $FM "$HOME/mnt/android_$NO"
+    else
+      $NOTIFICATIONS -a "partmount" \
+        "Trying to mount Android device" \
+        "Unable to mount $DEV."
+    fi
   fi
 }
 
@@ -238,16 +242,20 @@ function unmount_android_device() {
   NO=$(echo $CHOICE | awk -F ': ' '{print $1}')
   DEV=$(echo $CHOICE | awk -F ': ' '{print $2}')
 
-  $(which fusermount) -u $HOME/mnt/android_$NO
-  if [[ $? == 0 ]]; then
-    $NOTIFICATIONS -a "partmount" "Unmounted Android device" "$DEV from $HOME/mnt/android_$NO"
-    if [[ -d $HOME/mnt/android_$NO ]]; then
-      rm -rf $HOME/mnt/android_$NO
-    fi
+  if [[ -z $SELECTION ]] || [[ $SELECTION == "Abort" ]]; then
+    exit 1
   else
-    $NOTIFICATIONS -a "partmount" \
-      "Trying to unmount Android device" \
-      "Unable to unmount $DEV."
+    $(which fusermount) -u $HOME/mnt/android_$NO
+    if [[ $? == 0 ]]; then
+      $NOTIFICATIONS -a "partmount" "Unmounted Android device" "$DEV from $HOME/mnt/android_$NO"
+      if [[ -d $HOME/mnt/android_$NO ]]; then
+        rm -rf $HOME/mnt/android_$NO
+      fi
+    else
+      $NOTIFICATIONS -a "partmount" \
+        "Trying to unmount Android device" \
+        "Unable to unmount $DEV."
+    fi
   fi
 }
 
