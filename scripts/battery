@@ -90,8 +90,15 @@ STATUS=$(echo $BATTERYSTATUS | awk '{print $1}')
 PERCENTAGE=$(echo $BATTERYSTATUS | awk '{gsub("%",""); print $2}')
 TIME=$(echo $BATTERYSTATUS | awk '{print $3}')
 
-if [[ $PERCENTAGE -gt 95 && $STATUS != Discharging ]]; then
-  ICON="\uf118 \uf240"
+if [[ $PERCENTAGE -gt 95 ]]; then
+  case $STATUS in
+    Discharging)
+      ICON="\uf118 \uf240"
+      ;;
+    *)
+      ICON="\uf118 \uf492"
+      ;;
+  esac
 elif [[ $PERCENTAGE -gt 85 ]]; then
   case $STATUS in
     Discharging)
