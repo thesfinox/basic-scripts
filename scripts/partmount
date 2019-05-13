@@ -5,7 +5,7 @@
 #
 # This script implements an X11 menu interface to mount and unmount
 # devices and Android phones/tablets. It uses udisksctl as a backend and
-# mtp-tools for Android devices.
+# simple-mtpfs for Android devices.
 #
 # Author:     Riccardo Finotello
 # E-mail:     riccardo.finotello@gmail.com
@@ -84,23 +84,13 @@ else
   exit 1
 fi
 
-if [[ ! -z $(which mtp-detect) ]]; then
-  MTPDETECT=$(which mtp-detect)
+if [[ ! -z $(which simple-mtpfs) ]]; then
+  MTPDETECT=$(which simple-mtpfs)
 else
   printf "%s\n%s\n%s\n" \
     "We could not find a way to display available partitions." \
-    "You might want to install mtp-detect. E.g.: sudo apt install mtp-detect." \
+    "You might want to install simple-mtpfs from the AUR repository." \
     "Some of the functionalities will not be available." >&2
-fi
-
-if [[ ! -z $(which jmtpfs) ]]; then
-  MOUNTMTP=$(which jmtpfs)
-else
-  printf "%s\n%s\n%s\n" \
-    "We could not find a way to mount Android devices." \
-    "You might want to install jmtpfs. E.g.: sudo apt install jmtpfs." \
-    "The script will not work without it." >&2
-  exit 1
 fi
 
 # Check if the JSON parser is installed
@@ -128,9 +118,9 @@ fi
 
 # Display block devices
 function display_block_devices() {
-  DEVS=$($LSBLK -pJo "name,size,label,mountpoint,rm")
+  DEVS=$($LSBLK -pJo "name,size,label,mountpoint")
   MOUNTABLE=$(echo $DEVS | \
-    $JQ '.blockdevices | map(select( .rm == true ))')
+    $JQ '.blockdevices')
   LENGTH=$(echo $MOUNTABLE | $JQ 'length')
 
   TOTALCHILDREN=0
@@ -152,9 +142,11 @@ function display_block_devices() {
       SIZE=$(echo $MOUNT | $JQ ".size" | tr -d '"')
       LABEL=$(echo $MOUNT | $JQ ".label")
 
-      ENTRIES+="$LABEL $SIZE $DEV\n"
+      if [[ ! $DEV =~ .*nvme.* ]]; then
+        ENTRIES+="$LABEL $SIZE $DEV\n"
+        TOTALCHILDREN=$(( TOTALCHILDREN + 1 ))
+      fi
 
-      TOTALCHILDREN=$(( TOTALCHILDREN + 1 ))
     done
   done
 
@@ -206,7 +198,6 @@ function unmount_block_device() {
     MSG=$($MNT unmount -b $MOUNT)
     if [[ $? == 0 ]]; then
       $NOTIFICATIONS -a "partmount" "Unmount block device" "$MSG"
-      $MNT power-off -b $MOUNT
     else
       $NOTIFICATIONS -a "partmount" \
         "Trying to unmount block device" \
@@ -217,47 +208,46 @@ function unmount_block_device() {
 
 # Display Android devices
 function display_android_devices() {
-  CHOICE=$($MTPDETECT 2> /dev/null | awk -F ': ' '/Model/ {print $2}')
+  CHOICE=$($MTPDETECT -l 2> /dev/null)
   echo "$CHOICE" | $XMENU -dmenu -p "Choose Android device"
 }
 
 # Mount Android devices
 function mount_android_device() {
   CHOICE=$(display_android_devices)
-  BUS=$($MTPDETECT 2> /dev/null | grep -B14 $CHOICE | awk -F ': ' '/Bus location/ {print $2}')
-  DEV=$($MTPDETECT 2> /dev/null | grep -B14 $CHOICE | awk -F ': ' '/Device number/ {print $2}')
+  NO=$(echo $CHOICE | awk -F ': ' '{print $1}')
+  DEV=$(echo $CHOICE | awk -F ': ' '{print $2}')
 
-  if [[ ! -d $HOME/mnt/$CHOICE ]]; then
-    mkdir -p $HOME/mnt/$CHOICE
+  if [[ ! -d $HOME/mnt/android_$NO ]]; then
+    mkdir -p $HOME/mnt/android_$NO
   fi
-  $MOUNTMTP -device=$BUS,$DEV $HOME/mnt/$CHOICE -o allow_other 2> /dev/null
+  $MTPDETECT --device $NO $HOME/mnt/android_$NO 2> /dev/null
   if [[ $? == 0 ]]; then
-    $NOTIFICATIONS -a "partmount" "Mounted Android device" "$CHOICE in $HOME/mnt/$CHOICE"
-    if [[ -x $(which st) ]]; then
-      $(which st) -e $FM "$HOME/mnt/$CHOICE"
-    else
-      $TERMINAL -e $FM "$HOME/mnt/$CHOICE"
-    fi
+    $NOTIFICATIONS -a "partmount" "Mounted Android device" "$DEV in $HOME/mnt/android_$NO"
+    $TERMINAL -e $FM "$HOME/mnt/android_$NO"
   else
     $NOTIFICATIONS -a "partmount" \
       "Trying to mount Android device" \
-      "Unable to mount $CHOICE."
+      "Unable to mount $DEV."
   fi
 }
 
 # Unmount Android devices
 function unmount_android_device() {
   CHOICE=$(display_android_devices)
-  $(which fusermount) -u $HOME/mnt/$CHOICE
+  NO=$(echo $CHOICE | awk -F ': ' '{print $1}')
+  DEV=$(echo $CHOICE | awk -F ': ' '{print $2}')
+
+  $(which fusermount) -u $HOME/mnt/android_$NO
   if [[ $? == 0 ]]; then
-    $NOTIFICATIONS -a "partmount" "Unmounted Android device" "$CHOICE from $HOME/mnt/$CHOICE"
-    if [[ -d $HOME/mnt/$CHOICE ]]; then
-      rm -rf $HOME/mnt/$CHOICE
+    $NOTIFICATIONS -a "partmount" "Unmounted Android device" "$DEV from $HOME/mnt/android_$NO"
+    if [[ -d $HOME/mnt/android_$NO ]]; then
+      rm -rf $HOME/mnt/android_$NO
     fi
   else
     $NOTIFICATIONS -a "partmount" \
       "Trying to unmount Android device" \
-      "Unable to unmount $CHOICE."
+      "Unable to unmount $DEV."
   fi
 }
 
