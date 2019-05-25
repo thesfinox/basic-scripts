@@ -242,7 +242,7 @@ function unmount_android_device() {
   NO=$(echo $CHOICE | awk -F ': ' '{print $1}')
   DEV=$(echo $CHOICE | awk -F ': ' '{print $2}')
 
-  if [[ -z $SELECTION ]] || [[ $SELECTION == "Abort" ]]; then
+  if [[ -z $CHOICE ]] || [[ $CHOICE == "Abort" ]]; then
     exit 1
   else
     $(which fusermount) -u $HOME/mnt/android_$NO
