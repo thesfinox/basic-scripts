@@ -32,8 +32,8 @@ function show_help() {
   printf "%s\n" "    -h         Show this help and exit"
   printf "%s\n" "    -e         Edit the bookmark file"
   printf "%s\n" "    -m         Open selection menu"
-  printf "%s\n" "    -u URL     URL of the bookmark"
-  printf "%s\n" "    -n NAME    NAME of the bookmark"
+  printf "%s\n" "    -u URL     add URL of the bookmark"
+  printf "%s\n" "    -n NAME    NAME of the new bookmark (use with -u)"
 
   printf "\n%s\n%s\n\n" \
     "For bug report and info: riccardo.finotello@gmail.com" \
@@ -41,12 +41,12 @@ function show_help() {
 }
 
 # Check if the X11 menu is installed
-if [[ -x $(which rofi) ]]; then
-  XMENU=$(which rofi)
+if [[ -x $(which dmenu) ]]; then
+  XMENU=$(which dmenu)
 else
   printf "%s\n%s\n%s\n" \
-    "The X menu rofi in not in your path." \
-    "You might want to add it. E.g.: sudo pacman -Syu rofi" \
+    "The X menu is not in your path." \
+    "You might want to add it. E.g.: sudo pacman -Syu dmenu" \
     "The script will not work without it." >&2
   exit 1
 fi
@@ -76,9 +76,9 @@ function edit_file() {
 # Open selection menu
 function selection_menu() {
   if [[ -n $XMENU ]]; then
-    CHOICE=$(awk -F';' '{print $1 " <small><i>(" $2 ")</i></small>"}' $CONFIG | \
+    CHOICE=$(awk -F';' '{print $1 " (" $2 ")"}' $CONFIG | \
       sort | \
-      $XMENU -dmenu -markup-rows -i -p "Select URL" | \
+      $XMENU -i -l 15 -p "Select URL" | \
       sed 's/.*(\(.*\)).*/\1/g' )
   fi
 

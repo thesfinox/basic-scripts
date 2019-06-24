@@ -57,14 +57,12 @@ while getopts ":h" opt; do
 done
 
 # Check if dmenu/rofi are installed
-if [[ -x $(which rofi) ]]; then
-  XMENU="$(which rofi) -dmenu"
-elif [[ -x $(which dmenu) ]]; then
+if [[ -x $(which dmenu) ]]; then
   XMENU=$(which dmenu)
 else
   printf "%s\n%s\n%s\n" \
     "No X11 menu have been found." \
-    "You should consider installing one. E.g.: sudo pacman -S rofi." \
+    "You should consider installing one. E.g.: sudo pacman -S dmenu." \
     "The script will not continue without it."
   exit 1
 fi
@@ -84,7 +82,7 @@ fi
 # COMMANDS AND INFO
 # ------------------------------------
 
-MANPAGE=$(man -k . | $XMENU -p "Choose the man page" | awk '{print $1}')
+MANPAGE=$(man -k . | $XMENU -i -l 10 -p "Choose the man page" | awk '{print $1}')
 
 if [[ $MANPAGE ]]; then
   man -Tpdf $MANPAGE | $PDFOPEN -

@@ -43,14 +43,12 @@ function show_help() {
 }
 
 # Check if the X11 menu is installed
-if [[ ! -z $(which rofi) ]]; then
-  XMENU="$(which rofi) -dmenu"
-elif [[ ! -z $(which dmenu) ]]; then
+if [[ ! -z $(which dmenu) ]]; then
   XMENU=$(which dmenu)
 else
   printf "%s\n%s\n%s\n" \
     "The X11 menu is not in the PATH." \
-    "You might want to install it. E.g.: sudo apt install rofi." \
+    "You might want to install it. E.g.: sudo apt install dmenu." \
     "The script entirely relies on its presence." >&2
   exit 1
 fi
@@ -153,9 +151,8 @@ function display_block_devices() {
   ENTRIES=$(echo $ENTRIES | sed 's/$/Abort/g')
   
   SELECTION=$(echo -e $ENTRIES | $XMENU \
-    -p "Select block device" \
-    -mesg "<span foreground='white'>LABEL    SIZE    DEV</span>" \
-    -lines $(( TOTALCHILDREN + 1 )) -u $TOTALCHILDREN)
+    -i -l 10 \
+    -p "Select block device: ")
 
   echo $SELECTION
 }
@@ -209,7 +206,7 @@ function unmount_block_device() {
 # Display Android devices
 function display_android_devices() {
   CHOICE=$($MTPDETECT -l 2> /dev/null)
-  echo "$CHOICE" | $XMENU -dmenu -p "Choose Android device"
+  echo "$CHOICE" | $XMENU -i -l 10 -p "Choose Android device: "
 }
 
 # Mount Android devices

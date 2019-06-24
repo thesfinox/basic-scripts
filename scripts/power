@@ -103,14 +103,12 @@ else
 fi
 
 # Check if the xmenu script is installed
-if [[ ! -z $(which rofi) ]]; then
-  XMENU=$(which rofi)
-elif [[ ! -z $(which dmenu) ]]; then
+if [[ ! -z $(which dmenu) ]]; then
   XMENU=$(which dmenu)
 else
   printf "%s\n%s\n%s\n" \
     "The xmenu script is not in the PATH." \
-    "You might have to install it. E.g.: sudo apt install rofi." \
+    "You might have to install it. E.g.: sudo pacman -Syu dmenu." \
     "Some of the functionalities of this script may be compromised otherwise." >&2
 fi
 
@@ -213,16 +211,7 @@ function parse_command() {
 # Show option menu
 function show_menu() {
   ACTIONS="Lock\nExit\nStandby\nReboot\nShutdown"  
-  if [[ $XMENU == "$(which rofi)" ]]; then
-    URGENT="3,4"
-    PROMPT="Action"
-    MESG="<span foreground='white'>This is the <b>poweroff</b> menu. Choose your action: </span>"
-    RESP=$(echo -e $ACTIONS | $XMENU -i -u $URGENT -dmenu -p "$PROMPT" -location 2 -width 100 -lines 5 -mesg "$MESG")
-  elif [[ $MENU == "$(which dmenu)" ]]; then
-    PROMPT="Poweroff menu. Choose your action: "
-    CMD="$XMENU -p '$PROMPT'"
-    RESP=$(echo -e $ACTIONS | $XMENU -p "$PROMPT")
-  fi
+  RESP=$(echo -e "$ACTIONS" | $XMENU -i -l 5 -p "Poweroff menu. Choose your action: ")
 
   if [[ ! -z $RESP ]]; then
     case $RESP in

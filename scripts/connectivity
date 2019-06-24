@@ -52,6 +52,17 @@ else
   exit 1
 fi
 
+# Check if the X11 menu is installed
+if [[ -x $(which dmenu) ]]; then
+  XMENU=$(which dmenu)
+else
+  printf "%s\n%s\n%s\n" \
+    "The X menu is not in your path." \
+    "You might want to add it. E.g.: sudo pacman -Syu dmenu" \
+    "The script will not work without it." >&2
+  exit 1
+fi
+
 # Parse options
 while getopts ":h" opt; do
   case $opt in
@@ -187,23 +198,16 @@ function clickable_widget() {
       /usr/bin/pkill -RTMIN+1 i3blocks
       if [[ $($NMCLI radio wifi) == "enabled" ]]; then
         LIST=$(nmcli -f SSID,RATE,SIGNAL,BARS,SECURITY device wifi)
-        if [[ ! -z $(which rofi) ]]; then
-          CONNECTION=$(echo "$LIST" | tail -n+2 | $(which rofi) -i \
-            -mesg "<span foreground='white'>$(echo "$LIST" | head -n1)</span>" \
-            -dmenu -p "Connection: ")
-          $NMCLI connection up $CONNECTION &> /dev/null
-        elif [[ ! -z $(which dmenu) ]]; then
-          CONNECTION=$(echo "$LIST" | tail -n+2 | $(which dmenu) \
-            -p $(echo "$LIST" | head -n1))
+        if [[ -n $XMENU ]]; then
+          CONNECTION=$(echo "$LIST" | tail -n+2 | $XMENU -i \
+            -l 10 -p "Select the connection: ")
           $NMCLI connection up $CONNECTION &> /dev/null
         else
           show_notification wifi
         fi
       else
-        if [[ ! -z $(which rofi) ]]; then
-          QUESTION=$(echo "YES|NO" | $(which rofi) -i -sep "|" -dmenu -p "Turn Wi-Fi on" -lines 2)
-        elif [[ ! -z $(which dmenu) ]]; then
-          QUESTION=$(echo -e "YES\nNO" | $(which dmenu) -p "Turn Wi-Fi on")
+        if [[ -n $XMENU ]]; then
+          QUESTION=$(echo "YES\nNO" | $XMENU -i -l 2 -p "Turn Wi-Fi on? ")
         fi
         if [[ ! -z $QUESTION ]] && [[ $QUESTION == "YES" ]]; then
           toggle_wifi_state

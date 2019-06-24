@@ -66,18 +66,22 @@ if [[ ! -z $(which tmux) ]]; then
 else
   printf "%s\n%s\n%s\n" \
     "Tmux is not in your PATH" \
-    "You might want to install it. E.g.: sudo apt install tmux." \
+    "You might want to install it. E.g.: sudo pacman -Syu tmux." \
     "The script will not work without it." >&2
   exit 1
 fi
 
 # Check if rofi/dmenu is installed
-if [[ ! -z $(which rofi) ]]; then
-  XMENU="$(which rofi) -dmenu"
-elif [[ ! -z $(which dmenu) ]]; then
+if [[ ! -z $(which dmenu) ]]; then
   XMENU=$(which dmenu)
+else
+  printf "%s\n%s\n%s\n" \
+    "There is no X menu installed." \
+    "You might want to install it. E.g.: sudo pacman -Syu dmenu." \
+    "The script cannot work without it." >&2
+  exit 1
 fi
 
 # List detached sessions and ask
-ID=$($TMUX list-sessions | grep -v "attached" | $XMENU -p "Choose session" | awk -F ': ' '{print $1}')
+ID=$($TMUX list-sessions | grep -i -v "attached" | $XMENU -i -l 10 -p "Choose session: " | awk -F ': ' '{print $1}')
 $TMUX attach-session -d -t $ID
