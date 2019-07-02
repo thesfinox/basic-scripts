@@ -1,9 +1,3 @@
----
-description: >-
-  This is the documentation page of the basic tools and scripts to automatise
-  basic tasks in a desktop environment (or simple window manager).
----
-
 # Basic Tools and Scripts
 
 ## Introduction
