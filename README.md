@@ -1,11 +1,5 @@
 # Tools and Scripts
 
-## Table of Contents
-
-* [Introduction](./#introduction)
-* [Description of the Tools](./#description-of-the-tools)
-* [License](./#license)
-
 ## Introduction
 
 This tools are simple implementation of basic tasks we personally use in our desktop setup. They span across several applications, from using the terminal in a productive way to mounting hard drives and Android phones, etc.

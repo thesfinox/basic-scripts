@@ -1,11 +1,5 @@
 # Attachtmux
 
-## Table of Contents
-
-* [Description](attachtmux.md#description)
-* [Prerequisites](attachtmux.md#prerequisites)
-* [Usage](attachtmux.md#usage)
-
 ## Description
 
 `attachtmux` can be used to attach to a previous active session of the terminal multiplexer [tmux](https://en.wikipedia.org/wiki/Tmux). In order to use the script you should have both [tmux](https://en.wikipedia.org/wiki/Tmux) and [dmenu](https://tools.suckless.org/dmenu/) installed, as the tool uses the latter to display and select active sessions.
