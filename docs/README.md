@@ -12,7 +12,7 @@ The scripts are based on personal experience and might not fit the exact needs o
 
 * [attachtmux](tools/attachtmux.md)
 * [battery](tools/battery.md)
-* bookmarksi3
+* [bookmarksi3](tools/bookmarksi3.md)
 * clipboard
 * connectivity
 * help
