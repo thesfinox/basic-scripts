@@ -1,8 +1,8 @@
 # Table of contents
 
-* [Tools and Scripts](../README.md)
+* [Tools and Script](README.md)
 
 ## Documentation <a id="docs"></a>
 
-* [Attachtmux](attachtmux.md)
+* [Attachtmux](docs/attachtmux.md)
 
