@@ -4,7 +4,7 @@ description: >-
   manager such as i3.
 ---
 
-# Tools and Script
+# Tools and Scripts
 
 ## Introduction
 
@@ -16,7 +16,7 @@ The scripts are based on personal experience and may not provide a good user exp
 
 ## Description of the Tools
 
-{% page-ref page="docs/attachtmux.md" %}
+{% page-ref page="tools/attachtmux.md" %}
 
 ## License
 
