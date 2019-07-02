@@ -14,7 +14,7 @@ The scripts are based on personal experience and may not provide a good user exp
 
 ## Description of the Tools
 
-{% page-ref page="docs/attachtmux.md" %}
+* `attachtmux` \([link](docs/attachtmux.md)\)
 
 ## License
 
