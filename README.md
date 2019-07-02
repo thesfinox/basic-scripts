@@ -1,10 +1,12 @@
----
-description: >-
-  Collection of tools and scripts to manage basic task for a window manager such
-  as i3.
----
-
 # Tools and Scripts
+
+## Table of Contents
+
+* [Introduction](./#introduction)
+* [Description of the Tools](./#description-of-the-tools)
+  * [attachtm](./#attachtmux-link)[ux](./#prerequisites)
+    * [Prerequisites](./#prerequisites)
+    * [Usage](./#usage)
 
 ## Introduction
 
@@ -23,13 +25,15 @@ The scripts are based on personal experience and may not provide a good user exp
 * `tmux` \([link](https://en.wikipedia.org/wiki/Tmux)\) 
 * `dmenu` \([link](https://tools.suckless.org/dmenu/)\)
 
-{% hint style="info" %}
-In principle you can also use other dynamic menus for X, such as [rofi](https://github.com/davatorium/rofi). Its implementation is pretty straightforward: changing `dmenu` to `rofi -dmenu` in the script should be enough. `rofi` is also more customizable and versatile, but exceeds the actual needs of the script.
-{% endhint %}
+In principle you can also use other dynamic menus for X, such as [rofi](https://github.com/davatorium/rofi). Its implementation is pretty straightforward: changing `dmenu` to `rofi -dmenu` in the script should be enough. This alternative is also more customizable and versatile, but exceeds the actual needs of the script.
 
 #### Usage
 
 Simply bind a keyboard shortcut to `attachtmux`. 
 
 Use `attachtmux -h` in the terminal to show usage and help.
+
+## License
+
+This work is licensed under the MIT License, thus «THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.»
 
