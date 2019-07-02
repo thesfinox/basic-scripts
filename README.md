@@ -4,9 +4,7 @@
 
 * [Introduction](./#introduction)
 * [Description of the Tools](./#description-of-the-tools)
-  * [attachtm](./#attachtmux-link)[ux](./#prerequisites)
-    * [Prerequisites](./#prerequisites)
-    * [Usage](./#usage)
+* [License](./#license)
 
 ## Introduction
 
@@ -16,6 +14,7 @@ The scripts are based on personal experience and may not provide a good user exp
 
 ## Description of the Tools
 
+* [Attachtmux](./docs/attachtmux.md)
 
 ## License
 
