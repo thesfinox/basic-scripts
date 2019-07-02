@@ -8,8 +8,7 @@ The scripts are based on personal experience and may not provide a good user exp
 
 ## Documentation
 
-You can the full documentation in the [docs](./docs) directory as well as in a
-nicer format [here](https://thesfinox.gitbook.io/basic-scripts/).
+You can find the full documentation in a nice [Gitbook](https://www.gitbook.com) format [here](https://thesfinox.gitbook.io/basic-scripts/).
 
 ## License
 
