@@ -1,5 +1,0 @@
-root: ./gitboook/
-
-structure:
-  readme: ./tools-and-scripts.md
-  summary: ./table-of-contents.md
