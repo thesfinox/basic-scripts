@@ -1,6 +1,6 @@
 # Table of contents
 
-* [README](../README.md)
+* [Tools and Scripts](../README.md)
 
 ## Documentation <a id="docs"></a>
 
