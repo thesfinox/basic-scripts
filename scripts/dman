@@ -67,13 +67,21 @@ else
   exit 1
 fi
 
-# Check if Zathura is installed
-if [[ -x $(which zathura) ]]; then
+# Check if a PDF reader is installed
+if [[ -x $(which mupdf) ]]; then
+  PDFOPEN=$(which mupdf)
+elif [[ -x $(which zathura) ]]; then
   PDFOPEN=$(which zathura)
+elif [[ -x $(which evince) ]]; then
+  PDFOPEN=$(which evince)
+elif [[ -x $(which okular) ]]; then
+  PDFOPEN=$(which okular)
+elif [[ -x $(which xdg-open) ]]; then
+  PDFOPEN=$(which xdg-open)
 else
   printf "%s\n%s\n%s\n" \
-    "Zathura has not been found." \
-    "You should consider installing it. E.g.: sudo pacman -S zathura." \
+    "No PDF reader has not been found." \
+    "You should consider installing one. E.g.: sudo pacman -S mupdf." \
     "The script will not continue without it."
   exit 1
 fi
@@ -85,7 +93,10 @@ fi
 MANPAGE=$(man -k . | $XMENU -i -l 10 -p "Choose the man page" | awk '{print $1}')
 
 if [[ $MANPAGE ]]; then
-  man -Tpdf $MANPAGE | $PDFOPEN -
+  TMP=$(mktemp /tmp/dman_XXXXXX.pdf)
+  man -Tpdf $MANPAGE > $TMP
+  $PDFOPEN $TMP
+  rm $TMP
 fi
 
 exit 0
