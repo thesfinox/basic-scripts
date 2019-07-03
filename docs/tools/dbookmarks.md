@@ -1,8 +1,8 @@
-# Bookmarksi3
+# Dbookmarks
 
 ## Description
 
-`bookmarksi3` manages web bookmarks through a dynamic menu and lets the user open web pages in a browser session. It works best in the case of i3 window manager as a dynamic menu to quickly access  frequently browsed pages.
+`dbookmarks` manages web bookmarks through a dynamic menu and lets the user open web pages in a browser session. It works best in the case of i3 window manager as a dynamic menu to quickly access  frequently browsed pages.
 
 ## Prerequisites
 
@@ -24,11 +24,11 @@ The best experience should be delivered when `dmenu` is installed in a vanilla v
 
 ## Usage
 
-You can use `bookmarksi3` in several ways:
+You can use `dbookmarks` in several ways:
 
-* `bookmarksi3 -m`: opens a dynamic menu which allows the user to select the bookmark to open;
-* `bookmarksi3 -e`: directly edit the text file where all the bookmarks are stored;
-* `bookmarksi3 -u URL -n NAME`: add URL to the text file with NAME as label.
+* `dbookmarks -m`: open a dynamic menu which allows the user to select the bookmark to open;
+* `dbookmarks -e`: directly edit the text file where all the bookmarks are stored;
+* `dbookmarks -u URL -n NAME`: add URL to the text file with NAME as label.
 
 Its recommended usage is to bind `bookmarksi3 -m` to a keyboard shortcut, while other combination should be used in a comman line environment.
 
@@ -37,10 +37,10 @@ Options `-u` and `-n` must be used at the same time in order for the script to w
 {% endhint %}
 
 {% hint style="info" %}
-The script looks for the text file in the _config_ directory of the current user \(`~/.config/bookmarksi3/bookmarks.list` by default\). If the directory has been moved by `xdg-user-dir` then the scripts automatically looks for the path. As a last resource, it automatically creates the file in the default location.
+The script looks for the text file in the _config_ directory of the current user \(`~/.config/dbookmarks/bookmarks.list` by default\). If the directory has been moved by `xdg-user-dir` then the scripts automatically looks for the path. As a last resource, it automatically creates the file in the default location.
 {% endhint %}
 
 {% hint style="info" %}
-You can use `bookmarksi3 -h` to display usage and help.
+You can use `dbookmarks -h` to display usage and help.
 {% endhint %}
 
