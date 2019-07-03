@@ -47,7 +47,7 @@ ArXiv;https://arxiv.org/
 InspireHEP;http://inspirehep.net/
 ```
 
-Notice that there is no need to order the list in alphabetically as `dbookmarks` will automatically display it in that order.
+Notice that there is no need to order the list alphabetically as `dbookmarks` will automatically display it in that order.
 
 {% hint style="danger" %}
 Options `-u` and `-n` must be used at the same time in order for the script to work properly.
