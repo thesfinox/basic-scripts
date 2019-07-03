@@ -2,7 +2,7 @@
 
 ## Description
 
-`clipboard` use a simple tool to manage both primary and secondary clipboard in X. It can print the content of the clipboard or show it as a system notification. It also produces a QR code to share the content of the clipboard with other devices.
+`clipboard` is a simple tool to manage both primary and secondary clipboard in X. It can print the content of the clipboard or show it as a system notification. It also produces a QR code to share the content of the clipboard with other devices.
 
 ## Prerequisites
 
