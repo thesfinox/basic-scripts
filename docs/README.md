@@ -19,7 +19,7 @@ The scripts are based on personal experience and might not fit the exact needs o
 * [attachtmux](tools/attachtmux.md)
 * [battery](tools/battery.md)
 * [dbookmarks](tools/dbookmarks.md)
-* clipboard
+* [clipboard](tools/clipboard.md)
 * connectivity
 * help
 * layout
