@@ -7,9 +7,14 @@
 ## Prerequisites
 
 * [acpi](http://www.acpi.info/)
+* notification server \(such as [dunst](https://dunst-project.org/), optional\)
 
 {% hint style="info" %}
 Depending on your kernel configuration different modules can be available. The modules in the script should however be available in almost all cases.
+{% endhint %}
+
+{% hint style="info" %}
+The notification server is not required for the script to work, but it is highly recommended to show information on click for example when used with [i3status](https://i3wm.org/i3status/manpage.html) or [i3bar](https://i3wm.org/docs/i3bar-protocol.html).
 {% endhint %}
 
 ## Usage

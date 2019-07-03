@@ -11,9 +11,9 @@
 * a text editor \(such as [Vim](https://www.vim.org/)\)
 
 {% hint style="info" %}
-`bookmarksi3` first checks whether the environmental variable `$BROWSER` is set and uses the browser to which it points, otherwise it reverts the the default choice of the desktop environment \(using `xdg-open`\).
+`dbookmarks` first checks whether the environmental variable `$BROWSER` is set and uses the browser to which it points, otherwise it reverts the the default choice of the desktop environment \(using `xdg-open`\).
 
-The same policy applies to the choice of the text editor: it first checks for the definition of `$EDITOR`, then for the default choice of `xdg-open` and eventually to `nano`.
+The same policy applies to the choice of the text editor: it first checks for the definition of `$EDITOR`, then for the default choice of `xdg-open` and eventually defaults to `nano`.
 {% endhint %}
 
 {% hint style="info" %}
@@ -30,7 +30,24 @@ You can use `dbookmarks` in several ways:
 * `dbookmarks -e`: directly edit the text file where all the bookmarks are stored;
 * `dbookmarks -u URL -n NAME`: add URL to the text file with NAME as label.
 
-Its recommended usage is to bind `bookmarksi3 -m` to a keyboard shortcut, while other combination should be used in a comman line environment.
+The recommended usage is to bind `dbookmarks -m` to a keyboard shortcut, while other combination should be used in a command line environment.
+
+While using `dbookmarks -e` keep in mind that the format used by the text file is `label;URL`, that is the extended name of the bookmark followed by the URL and separated by a semicolon \(no space between the label and the semicolon and between the semicolon and the URL\). E.g.:
+
+```bash
+$ cat ~/.config/dbookmarks/bookmarks.list
+```
+
+will output something like:
+
+```bash
+Arch Wiki;https://wiki.archlinux.org/
+DuckDuckGo;https://duckduckgo.com/
+ArXiv;https://arxiv.org/
+InspireHEP;http://inspirehep.net/
+```
+
+Notice that there is no need to order the list alphabetically as `dbookmarks` will automatically display it in that order.
 
 {% hint style="danger" %}
 Options `-u` and `-n` must be used at the same time in order for the script to work properly.

@@ -7,4 +7,5 @@
 * [Attachtmux](tools/attachtmux.md)
 * [Battery](tools/battery.md)
 * [Dbookmarks](tools/dbookmarks.md)
+* [Clipboard](tools/clipboard.md)
 
