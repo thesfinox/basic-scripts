@@ -27,7 +27,7 @@ function show_usage() {
 function show_help() {
   show_usage
 
-  printf "\n%s\n\n" "Show dmenu/rofi list of all man pages and display them."
+  printf "\n%s\n\n" "Show dmenu list of all man pages and display them."
   printf "%s\n" "OPTIONS:"
   printf "%s\n" "    -h         Show this help and exit"
 
