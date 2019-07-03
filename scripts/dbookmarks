@@ -52,14 +52,14 @@ else
 fi
 
 # Choose the configuration file
-if [[ -f $HOME/.config/bookmarksi3/bookmarks.list ]]; then
-  CONFIG=$HOME/.config/bookmarksi3/bookmarks.list
-elif [[ -f $(xdg-user-dir CONFIG)/bookmarksi3/bookmarks.list ]]; then
-  CONFIG=$(xdg-user-dir CONFIG)/bookmarksi3/bookmarks.list
+if [[ -f $HOME/.config/dbookmarks/bookmarks.list ]]; then
+  CONFIG=$HOME/.config/dbookmarks/bookmarks.list
+elif [[ -f $(xdg-user-dir CONFIG)/dbookmarks/bookmarks.list ]]; then
+  CONFIG=$(xdg-user-dir CONFIG)/dbookmarks/bookmarks.list
 else
-  mkdir -p $HOME/.config/bookmarksi3 2> /dev/null
-  touch $HOME/.config/bookmarksi3/bookmarks.list
-  CONFIG=$HOME/.config/bookmarksi3/bookmarks.list
+  mkdir -p $HOME/.config/dbookmarks 2> /dev/null
+  touch $HOME/.config/dbookmarks/bookmarks.list
+  CONFIG=$HOME/.config/dbookmarks/bookmarks.list
 fi
 
 # Function to edit the file
