@@ -32,6 +32,23 @@ You can use `dbookmarks` in several ways:
 
 The recommended usage is to bind `dbookmarks -m` to a keyboard shortcut, while other combination should be used in a command line environment.
 
+While using `dbookmarks -e` keep in mind that the format used by the text file is `label;URL`, that is the extended name of the bookmark followed by the URL and separated by a semicolon \(no space between the label and the semicolon and between the semicolon and the URL\). E.g.:
+
+```bash
+$ cat ~/.config/dbookmarks/bookmarks.list
+```
+
+will output something like:
+
+```bash
+Arch Wiki;https://wiki.archlinux.org/
+DuckDuckGo;https://duckduckgo.com/
+ArXiv;https://arxiv.org/
+InspireHEP;http://inspirehep.net/
+```
+
+Notice that there is no need to order the list in alphabetically as `dbookmarks` will automatically display it in that order.
+
 {% hint style="danger" %}
 Options `-u` and `-n` must be used at the same time in order for the script to work properly.
 {% endhint %}
