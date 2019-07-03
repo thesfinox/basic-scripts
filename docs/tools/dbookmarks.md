@@ -13,7 +13,7 @@
 {% hint style="info" %}
 `dbookmarks` first checks whether the environmental variable `$BROWSER` is set and uses the browser to which it points, otherwise it reverts the the default choice of the desktop environment \(using `xdg-open`\).
 
-The same policy applies to the choice of the text editor: it first checks for the definition of `$EDITOR`, then for the default choice of `xdg-open` and eventually to `nano`.
+The same policy applies to the choice of the text editor: it first checks for the definition of `$EDITOR`, then for the default choice of `xdg-open` and eventually defaults to `nano`.
 {% endhint %}
 
 {% hint style="info" %}
