@@ -104,7 +104,16 @@ fi
 
 # Clickable block when using i3blocks in i3wm
 function show_notification() {
-  $NOTIFICATIONS -a "Connections" --category=network "Connection manager" "$($NMCLI -p device $1)"
+  CONNECTIONS=$($NMCLI -f TYPE,CONNECTION device status)
+  ETH=$(echo "$CONNECTIONS" | awk '/ethernet/ {print $2}')
+  WIFI=$(echo "$CONNECTIONS" | awk '/wifi/ {print $2}' | head -n1)
+  MSG="\
+    NETWORK STATUS \n\
+    ============== \n\
+    ethernet   $ETH \n\
+    wifi       $WIFI"
+
+  $NOTIFICATIONS -a "Connections" "Connection manager" "$MSG"
 }
 
 # Show currently connected interface(s)
@@ -207,7 +216,7 @@ function clickable_widget() {
         fi
       else
         if [[ -n $XMENU ]]; then
-          QUESTION=$(echo "YES\nNO" | $XMENU -i -l 2 -p "Turn Wi-Fi on? ")
+          QUESTION=$(echo -e "YES\nNO" | $XMENU -i -l 2 -p "Turn Wi-Fi on? ")
         fi
         if [[ ! -z $QUESTION ]] && [[ $QUESTION == "YES" ]]; then
           toggle_wifi_state
