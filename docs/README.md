@@ -1,5 +1,9 @@
 # Basic Tools and Scripts
 
+> _**How many times do I have to tell ya? The right tool for the right job!**_
+>
+> Cmd. Montgomery Scott, USS Enterprise \(_Star Trek V: The Final Frontier_\)
+
 ## Introduction
 
 This is the documentation page you can find on [Gitbook](https://www.gitbook.com/) following this [URL](https://thesfinox.gitbook.io/basic-scripts/). The repository is hosted on [Github](https://github.com) and you can access it at this [URL](https://github.com/thesfinox/basic-scripts).
