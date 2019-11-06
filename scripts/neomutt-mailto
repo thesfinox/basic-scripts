@@ -1,0 +1,84 @@
+#! /usr/bin/env bash
+
+#
+# Open e-mail links in Neomutt.
+#
+# The scripts provides a shortcut to open RFC2368 compatible URLs with Neomutt.
+#
+# Author:     Riccardo Finotello
+# E-mail:     riccardo.finotello@gmail.com
+#
+# Copyright:  2019 - Riccardo Finotello and Alessandra Cappati
+# License:    MIT License
+#
+
+# ------------------------------------
+# OPTIONS, HELP, USAGE AND CHECKS
+# ------------------------------------
+
+# Show usage
+function show_usage() {
+  USAGE="$(basename $0) [-h] URL"
+  printf "\n%s\n%s\n" "Usage:" "    $USAGE"
+}
+
+# Show help
+function show_help() {
+  show_usage
+
+  printf "\n%s\n\n" "Open e-mail links in Neomutt."
+  printf "%s\n" "OPTIONS:"
+  printf "%s\n" "    -h         Show this help and exit"
+
+  printf "\n%s\n%s\n\n" \
+    "For bug report and info: riccardo.finotello@gmail.com" \
+    "Copyright (c) 2019 - Riccardo Finotello and Alessandra Cappati - MIT License"
+}
+
+# Parse options
+while getopts ":h" opt; do
+  case $opt in
+    h)
+      show_help
+      exit 0
+      ;;
+    \?)
+      printf "%s\n" "Invalid option: -$OPTARG." >&2
+      show_usage
+      exit 1
+      ;;
+    :)
+      printf "%s\n" "-$OPTARG requires an argument." >&2
+      show_usage
+      exit 1
+      ;;
+  esac
+done
+
+# ------------------------------------
+# COMMANDS AND INFO
+# ------------------------------------
+
+if [[ -z $1 ]]; then
+  show_help
+  exit 1
+fi
+
+if [[ -x $(which st) ]]; then
+  TRM=$(which st)
+elif [[ -x $(which xterm) ]]; then
+  TRM=$(which xterm)
+fi
+
+if [[ -x $(which neomutt) ]]; then
+  MAILPROG=$(which neomutt)
+elif [[ -x $(which mutt) ]]; then
+  MAILPROG=$(which mutt)
+else
+  printf "%s\n%s\n%s\n" "I could not find Neomutt or Mutt." \
+                        "You may want to install the first. E.g.: pacman -S neomutt" \
+                        "The script will stop."
+  exit 1
+fi
+
+$TRM -e $MAILPROG "$1"

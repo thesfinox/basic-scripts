@@ -68,10 +68,10 @@ else
 fi
 
 # Check if a PDF reader is installed
-if [[ -x $(which mupdf) ]]; then
-  PDFOPEN=$(which mupdf)
-elif [[ -x $(which zathura) ]]; then
+if [[ -x $(which zathura) ]]; then
   PDFOPEN=$(which zathura)
+elif [[ -x $(which mupdf) ]]; then
+  PDFOPEN=$(which mupdf)
 elif [[ -x $(which evince) ]]; then
   PDFOPEN=$(which evince)
 elif [[ -x $(which okular) ]]; then
