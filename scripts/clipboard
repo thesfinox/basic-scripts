@@ -3,7 +3,7 @@
 #
 # Show and share clipboard content.
 #
-# The script shows clipboard content using Clipit clipboard manager. It uses
+# The script shows clipboard content using Parcellite clipboard manager. It uses
 # Python module for QR code creation in order to share the content of the
 # clipboard buffer with external devices and a notification client to
 # display the content on screen.
@@ -41,12 +41,12 @@ function show_help() {
 }
 
 # Check if the clipboard manager is installed
-if [[ ! -z $(which clipit) ]]; then
-  CLIPBOARD=$(which clipit)
+if [[ ! -z $(which parcellite) ]]; then
+  CLIPBOARD=$(which parcellite)
 else
   printf "%s\n%s\n%s\n" \
     "The clipboard manager is not in the PATH." \
-    "You might have to install it. E.g.: sudo apt install clipit." \
+    "You might have to install it. E.g.: sudo pacman -S parcellite." \
     "The clipboard manager is required for this script to run." >&2
   exit 1
 fi
