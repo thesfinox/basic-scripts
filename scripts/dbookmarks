@@ -68,7 +68,6 @@ function edit_file() {
     $(which vim) $CONFIG
   elif [[ -x $(which emacs) ]]; then
     $(which emacs) $CONFIG
-  else
   elif [[ -x $(which xdg-open) ]]; then
     $(which xdg-open) $CONFIG
   else
