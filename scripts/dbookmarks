@@ -64,8 +64,11 @@ fi
 
 # Function to edit the file
 function edit_file() {
-  if [[ -n $EDITOR ]]; then
-    $EDITOR $CONFIG
+  if [[ -x $(which vim) ]]; then
+    $(which vim) $CONFIG
+  elif [[ -x $(which emacs) ]]; then
+    $(which emacs) $CONFIG
+  else
   elif [[ -x $(which xdg-open) ]]; then
     $(which xdg-open) $CONFIG
   else
