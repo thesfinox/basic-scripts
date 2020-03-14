@@ -90,7 +90,7 @@ fi
 # CODE='3165524' for Torino, Italy
 function get_report() {
   URL='api.openweathermap.org/data/2.5/weather'
-  CODE='3165524'
+  CODE='3165523'
   UNITS='metric'
   APPID='1303b30073ae867e2d12fd79dd5b6f09'
 
@@ -118,7 +118,7 @@ function json_report() {
     "scattered clouds")
       ICON="\ue33d"
       ;;
-    "broken clouds")
+    "broken clouds"|"overcast clouds")
       ICON="\ue312"
       ;;
     "shower rain"|"moderate rain")
