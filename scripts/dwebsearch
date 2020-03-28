@@ -39,7 +39,7 @@ function show_help() {
 }
 
 # Check if X11 menu is installed
-[[ -x $(which dmenu) ]] && XMENU=dmenu || exit 1
+[[ -x $(which dmenu) ]] || exit 1
 
 # Load or create search history
 HST=$XDG_CACHE_HOME/dsearch/dsearch_hst
@@ -62,7 +62,7 @@ while getopts ":hiyw" opt; do
           exit 1
           ;;
       i)
-          cat $HST| $XMENU -i -l 20 -p "Web search: "| \
+          cat $HST| dmenu -i -l 20 -p "Web search: "| \
               tee -a $HST| \
               xargs -r -I{} $URLOPEN --new-window \
               "https://duckduckgo.com/?q={}"
@@ -71,7 +71,7 @@ while getopts ":hiyw" opt; do
           exit 0
           ;;
       y)
-          cat $HST| $XMENU -i -l 20 -p "Youtube search: "| \
+          cat $HST| dmenu -i -l 20 -p "Youtube search: "| \
               tee -a $HST| \
               xargs -r -I{} $URLOPEN --new-window \
               "https://www.youtube.com/results?search_query={}"
@@ -80,7 +80,7 @@ while getopts ":hiyw" opt; do
           exit 0
           ;;
       w)
-          cat $HST| $XMENU -i -l 20 -p "Wikipedia search: "| \
+          cat $HST| dmenu -i -l 20 -p "Wikipedia search: "| \
               tee -a $HST| \
               xargs -r -I{} $URLOPEN --new-window \
               "https://wikipedia.org/w/index.php?search={}"

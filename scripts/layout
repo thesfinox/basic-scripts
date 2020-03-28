@@ -39,14 +39,14 @@ function show_help() {
 }
 
 # Check if xkblayout-state is installed
-[[ -x $(which xkblayout-state) ]] && XKB=xkblayout-state || exit 1
+[[ -x $(which xkblayout-state) ]] || exit 1
 
 # Clickable widget
 function clickable_widget() {
   case $BLOCK_BUTTON in
     1)
       pkill -RTMIN+1 i3blocks
-      $XKB set +1
+      xkblayout-state set +1
       ;;
     2)
       pkill -RTMIN+1 i3blocks
@@ -54,7 +54,7 @@ function clickable_widget() {
     3)
       notify-send \
           "Input Layout" \
-          "Current: $($XKB print %n)\nAvailable: $($XKB print %N| xargs)"
+          "Current: $(xkblayout-state print %n)\nAvailable: $(xkblayout-state print %N| xargs)"
       pkill -RTMIN+1 i3blocks
       ;;
   esac
@@ -68,17 +68,17 @@ while getopts ":hslc" opt; do
       exit 0
       ;;
     s)
-      echo -e "\uf024 $($XKB print %s)"
+      echo -e "\uf024 $(xkblayout-state print %s)"
       clickable_widget
       exit 0
       ;;
     l)
-      echo -e "\uf024 $($XKB print %n)"
+      echo -e "\uf024 $(xkblayout-state print %n)"
       exit 0
       ;;
     c)
-      $XKB set +1
-      echo -e "New layout: $($XKB print %n)"
+      xkblayout-state set +1
+      echo -e "New layout: $(xkblayout-state print %n)"
       exit 0
       ;;
     \?)

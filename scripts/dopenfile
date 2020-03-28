@@ -36,7 +36,7 @@ function show_help() {
 }
 
 # Check if X11 menu is installed
-[[ -x $(which dmenu) ]] && XMENU=dmenu || exit 1
+[[ -x $(which dmenu) ]] || exit 1
 
 # Parse options
 while getopts ":h" opt; do
@@ -62,11 +62,11 @@ done
 # COMMANDS AND INFO
 # ------------------------------------
 find $HOME -maxdepth 1 -mindepth 1 -not -path "*/[@.]*" -type d| sort| \
-    $XMENU -i -l 20| \
+    dmenu -i -l 20| \
     xargs -r -I{} find {} -maxdepth 1 -not -path "*/[@.]*" -type d| sort| \
-    $XMENU -i -l 20| \
+    dmenu -i -l 20| \
     xargs -r -I{} find {} -not -path "*/[@.]*" -type f| sort| \
-    $XMENU -i -l 20| \
+    dmenu -i -l 20| \
     xargs -r xdg-open
 
 exit 0

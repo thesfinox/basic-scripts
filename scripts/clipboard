@@ -41,22 +41,22 @@ function show_help() {
 }
 
 # Check if the clipboard manager is installed
-[[ -x $(which parcellite) ]] && CLIPBOARD=parcellite || exit 1
+[[ -x $(which parcellite) ]] || exit 1
 
 # Check if the Python module to generate QR codes is installed
-[[ -x $(which qr) ]] && QR=qr || exit 1
+[[ -x $(which qr) ]] || exit 1
 
 # Define the image viewer
-[[ -x $(which feh) ]] && IMG=feh || IMG=xdg-open
+[[ -x $(which feh) ]] && IMG="feh -Z" || IMG=xdg-open
 
 # Show clipboard content
 function show_clipboard() {
   case $1 in
     p|primary)
-      printf "%s\n" "$($CLIPBOARD -p)"
+      printf "%s\n" "$(parcellite -p)"
       ;;
     c|clipboard)
-      printf "%s\n" "$($CLIPBOARD -c)"
+      printf "%s\n" "$(parcellite -c)"
       ;;
     *)
       printf "%s\n" "Wrong BUF type: $1 is not a good BUF." >&2
@@ -108,8 +108,8 @@ function choose_img_viewer() {
   ARG=${1:0:1}
 
   [[ $DISPLAY ]] \
-      && ($CLIPBOARD -$ARG| $QR| $IMG -Z -) \
-      || ($CLIPBOARD -$ARG| $QR)
+      && (parcellite -$ARG| qr| $IMG -) \
+      || (parcellite -$ARG| qr)
 }
 
 function show_qr() {
@@ -144,9 +144,8 @@ while getopts ":hc:n:q:" opt; do
           || (printf "%s\n" "Unable to show notifications." >&2 && exit 1)
       ;;
     q)
-      [[ $QR ]] \
-          && (show_qr $OPTARG && exit 0) \
-          || (printf "%s\n" "Unable to encode a QR code." >&2 && exit 1)
+      show_qr $OPTARG
+      exit 0
       ;;
     \?)
       printf "%s\n" "Invalid option: -$OPTARG is not an option." >&2

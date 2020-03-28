@@ -1,0 +1,135 @@
+#! /usr/bin/env bash
+
+#
+# Set and read notifications state.
+#
+# Turn on and off notifications and display the current statei. Dunst must be
+# installed.
+#
+# Author:     Riccardo Finotello
+# E-mail:     riccardo.finotello@gmail
+#
+# Copyright:  2020 - Riccardo Finotello
+# License:    MIT License
+#
+
+# ------------------------------------
+# OPTIONS, HELP, USAGE AND CHECKS
+# ------------------------------------
+
+# Show usage
+function show_usage() {
+    USAGE="$(basename $0) [-h] [-s|-S|-t] [-r] [-m] [-b]"
+    printf "\n%s\n%s\n" "Usage:" "    $USAGE"
+}
+
+# Show help
+function show_help() {
+    show_usage
+
+    printf "\n%s\n\n" "Set and read notifications state."
+    printf "%s\n" "OPTIONS:"
+    printf "%s\n" "    -h         Show this help and exit"
+    printf "%s\n" "    -s         Start notifications"
+    printf "%s\n" "    -S         Stop notifications"
+    printf "%s\n" "    -t         Toggle notifications"
+    printf "%s\n" "    -r         Read notifications status"
+    printf "%s\n" "    -m         Show a menu and change status"
+    printf "%s\n" "    -b         i3blocks output"
+
+    printf "\n%s\n%s\n\n" \
+           "For bug report and info: riccardo.finotello@gmail.com" \
+           "Copyright (c) 2020 - MIT License - Riccardo Finotello"
+}
+
+# Check if systemctl is installed
+[[ -x $(which systemctl) ]] || exit 1
+
+# Check if Dunst is installed
+[[ -x $(which dunst) ]] || exit 1
+
+# Check if X11 menu is installed
+[[ -x $(which dmenu) ]] || exit 1
+
+# Start notifications
+function start_notifications() {
+    systemctl --user start dunst.service
+}
+
+# Stop notifications
+function stop_notifications() {
+    systemctl --user stop dunst.service
+}
+
+# Toggle notifications
+function toggle_notifications() {
+    [[ $(systemctl --user is-active dunst.service) == 'active' ]] \
+        && stop_notifications \
+        || start_notifications
+}
+
+# Read notifications
+function read_notifications() {
+    [[ $(systemctl --user is-active dunst.service) == 'active' ]] \
+        && echo -e "\ufba0 ON" \
+        || echo -e "\ufba1 OFF"
+}
+
+# Parse options
+while getopts ":hsStrmb" opt; do
+    case $opt in
+      h)
+          show_help
+          exit 0
+          ;;
+      s)
+          start_notifications
+          exit 0
+          ;;
+      S)
+          stop_notifications
+          exit 0
+          ;;
+      t)
+          toggle_notifications
+          exit 0
+          ;;
+      r)
+          read_notifications
+          exit 0
+          ;;
+      m)
+          CHOICE=$(echo -e "ON\nOFF"| dmenu -i -p "Notifications (ON|OFF): ")
+          [[ $CHOICE == 'ON' ]] && start_notifications || stop_notifications
+          exit 0
+          ;;
+      b)
+          read_notifications
+
+          case $BLOCK_BUTTON in
+              1)
+                  toggle_notifications
+                  pkill -RTMIN+1 i3blocks
+                  exit 0
+                  ;;
+          esac
+          ;;
+      \?)
+          printf "%s\n" "Invalid option: -$OPTARG." >&2
+          show_usage
+          exit 1
+          ;;
+      :)
+          printf "%s\n" "-$OPTARG requires an argument." >&2
+          show_usage
+          exit 1
+          ;;
+    esac
+done
+
+# ------------------------------------
+# COMMANDS AND INFO
+# ------------------------------------
+[[ -z $* ]] && (show_help && exit 1)
+
+# vim: ft=sh

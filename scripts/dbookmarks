@@ -38,7 +38,7 @@ function show_help() {
 }
 
 # Check if the X11 menu is installed
-[[ -x $(which dmenu) ]] && XMENU=dmenu || exit 1
+[[ -x $(which dmenu) ]] || exit 1
 
 # Check if browser is set
 [[ -n $BROWSER ]] && URLOPEN=$BROWSER || URLOPEN=xdg-open
@@ -61,7 +61,7 @@ while getopts ":hem" opt; do
         ;;
       m)
         cat $LIST| sort| column -t -s'^^^'| \
-            $XMENU -i -l 20 -p 'Web bookmarks: '| awk '{print $NF}'| \
+            dmenu -i -l 20 -p 'Web bookmarks: '| awk '{print $NF}'| \
             xargs -r $BROWSER --new-window
         exit 0
         ;;

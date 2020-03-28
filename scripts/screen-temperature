@@ -9,7 +9,7 @@
 # Author:     Riccardo Finotello
 # E-mail:     riccardo.finotello@gmail.com
 #
-# Copyright:  2019 - Alessandra Cappati and Riccardo Finotello
+# Copyright:  2020 - Riccardo Finotello
 # License:    MIT License
 #
 
@@ -36,6 +36,9 @@ function show_help() {
     "Copyright (c) 2019 - Alessandra Cappati and Riccardo Finotello - MIT License"
 }
 
+# Check if Redsihft is installed
+[[ -x $(which redshift) ]] || exit 1
+
 # Parse options
 while getopts ":h" opt; do
   case $opt in
@@ -59,46 +62,19 @@ done
 # ------------------------------------
 # COMMANDS AND INFO
 # ------------------------------------
-
-# Check existence of "redshift"
-if [[ ! -z $(which redshift) ]]; then
-  REDSHIFT="$(which redshift)"
-else
-  printf "%s\n%s\n%s\n" \
-    "Redshift is not in your PATH." \
-    "You might have to install it. E.g.: sudo apt install redshift." \
-    "The script entirely relies on the presence of Redshift." >&2
-  exit 1
-fi
-
-# Check if the notification client is in the PATH
-if [[ ! -z $(which notify-send) ]]; then
-  NOTIFICATIONS=$(which notify-send)
-else
-  printf "%s\n%s\n%s\n" \
-    "The notification client is not in the PATH." \
-    "You might have to install it. E.g.: sudo apt install ruby-notify." \
-    "Some of the functionalities of this script may be compromised otherwise." >&2
-fi
-
 # Read screen temperature
-if [[ $($REDSHIFT -p | awk '/^Period/ {print $2}') == "Daytime" ]]; then
-  echo -e "\uf185 $($REDSHIFT -p 2> /dev/null | awk '/^Colour/ {print $3}')"
-else
-  echo -e "\uf186 $($REDSHIFT -p 2> /dev/null | awk '/^Colour/ {print $3}')"
-fi
+PERIOD=$(redshift -p 2> /dev/null| awk '/^Period/ {print $NF}')
+TEMPERATURE=$(redshift -p 2> /dev/null| awk '/^Colour/ {print $NF}')
+
+[[ $PERIOD == 'Daytime' ]] \
+    && echo -e "\uf185 $TEMPERATURE" \
+    || echo -e "\uf186 $TEMPERATURE"
 
 # Clickable widget
 case $BLOCK_BUTTON in
-  1)
-    $(which pkill) -RTMIN+1 i3blocks
-    ;;
-  2)
-    $(which pkill) -RTMIN+1 i3blocks
-    ;;
   3)
-    $(which pkill) -RTMIN+1 i3blocks
-    $NOTIFICATIONS -a "Redshift" "Screen temperature" "$($REDSHIFT -p 2> /dev/null)"
+    pkill -RTMIN+1 i3blocks
+    notify-send "Screen Colour Temperature" "$(redshift -p 2> /dev/null)"
     ;;
 esac
 

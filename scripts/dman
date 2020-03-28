@@ -56,7 +56,7 @@ while getopts ":h" opt; do
 done
 
 # Check if dmenu/rofi are installed
-[[ -x $(which dmenu) ]] && XMENU=dmenu || exit 1
+[[ -x $(which dmenu) ]] || exit 1
 
 # Check if a PDF reader is installed
 [[ $READER ]] && PDFOPEN=$READER || PDFOPEN=xdg-open
@@ -65,7 +65,7 @@ done
 # COMMANDS AND INFO
 # ------------------------------------
 MANPAGE=$(apropos .| sort| sed 's/[)] *- /)^^^/'| column -t -s'^^^'| \
-          $XMENU -i -l 20 -p 'Man pages: '| awk '{print $1}')
+          dmenu -i -l 20 -p 'Man pages: '| awk '{print $1}')
 
 [[ $MANPAGE ]] && (man -Tpdf $MANPAGE| $READER -) || exit 1
 

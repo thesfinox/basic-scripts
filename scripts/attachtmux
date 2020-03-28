@@ -38,10 +38,10 @@ function show_help() {
 }
 
 # Check if X11 menu is installed
-[[ -x $(which dmenu) ]] && XMENU=dmenu || exit 1
+[[ -x $(which dmenu) ]] || exit 1
 
 # Check if Tmux is installed
-[[ -x $(which tmux) ]] && TMUX=tmux || exit 1
+[[ -x $(which tmux) ]] || exit 1
 
 # Parse options
 while getopts ":hnr" opt; do
@@ -56,11 +56,11 @@ while getopts ":hnr" opt; do
         exit 1
         ;;
       n)
-        $TERMINAL -e $TMUX -f $XDG_CONFIG_HOME/tmux/config -2
+        $TERMINAL -e tmux -f $XDG_CONFIG_HOME/tmux/config -2
         exit 0
         ;;
       r)
-        $TMUX list-sessions| grep -i -v 'attached'| \
+        tmux list-sessions| grep -i -v 'attached'| \
               dmenu -i -l 20 -p 'Tmux detached sessions: '| \
               awk -F': ' '{print $1}'| \
               xargs -r -I{} $TERMINAL -e tmux attach-session -d -t {}

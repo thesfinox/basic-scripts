@@ -1,16 +1,15 @@
 #! /usr/bin/env bash
 
 #
-# Get weather info.
+# Get weather information.
 #
-# The scripts checks weather condition on openweathermap.org and displays very
-# short information on current temperature and weather conditions in specified
-# city.
+# Display current weather information from openweathermap.org for a specific
+# location.
 #
 # Author:     Riccardo Finotello
 # E-mail:     riccardo.finotello@gmail.com
 #
-# Copyright:  2019 - Alessandra Cappati and Riccardo Finotello
+# Copyright:  2020 - Riccardo Finotello
 # License:    MIT License
 #
 
@@ -20,165 +19,178 @@
 
 # Show usage
 function show_usage() {
-  USAGE="$(basename $0) [-h] [-s]"
-  printf "\n%s\n%s\n" "Usage:" "    $USAGE"
+    USAGE="$(basename $0) [-h] [-v|-s] [-b]"
+    printf "\n%s\n%s\n" "Usage:" "    $USAGE"
 }
 
 # Show help
 function show_help() {
-  show_usage
+    show_usage
 
-  printf "\n%s\n\n" "Get weather info."
-  printf "%s\n" "OPTIONS:"
-  printf "%s\n" "    -h   Show this help and exit"
-  printf "%s\n" "    -s   Print short version"
+    printf "\n%s\n\n" "Get weather information."
+    printf "%s\n" "OPTIONS:"
+    printf "%s\n" "    -h         Show this help and exit"
+    printf "%s\n" "    -v         Verbose version"
+    printf "%s\n" "    -s         Short version"
+    printf "%s\n" "    -b         i3blocks version"
 
-  printf "\n%s\n%s\n\n" \
-    "For bug report and info: riccardo.finotello@gmail.com" \
-    "Copyright (c) 2019 - Alessandra Cappati and Riccardo Finotello - MIT License"
+    printf "\n%s\n%s\n\n" \
+           "For bug report and info: riccardo.finotello@gmail.com" \
+           "Copyright (c) 2020 - Riccardo Finotello - MIT License"
+}
+
+# Check if curl is installed
+[[ -x $(which curl) ]] || exit 1
+
+# Check if JSON parser is installed
+[[ -x $(which jq) ]] || exit 1
+
+# Check config file
+[[ -f $XDG_CONFIG_HOME/openweather/config ]] \
+    && source $XDG_CONFIG_HOME/openweather/config
+
+# Check if API key is not empty
+[[ ! $API ]] && (printf "Missing API key!" && exit 1)
+
+# Define city id
+ID=${CITYID:-3165523}
+
+# API URL
+URL=https://api.openweathermap.org/data/2.5/weather
+
+# Curl information
+RESPONSE=$(curl -Ss "$URL/?id=$ID&appid=$API")
+
+# Print icon
+function print_icon() {
+    case $1 in
+        2[0-9]*)
+            echo "\ue31d"
+            ;;
+        3[0-9]*)
+            echo "\ue316"
+            ;;
+        50[0-9])
+            echo "\ue318"
+            ;;
+        511)
+            echo "\ue316"
+            ;;
+        5[2-3][0-9])
+            echo "\ue34a"
+            ;;
+        6[0-9]*)
+            echo "\ue313"
+            ;;
+        7[0-9]*)
+            echo "\ue313"
+            ;;
+        800)
+            echo "\uf185"
+            ;;
+        801)
+            echo "\ue21d"
+            ;;
+        802)
+            echo "\ue268"
+            ;;
+        803|804)
+            echo "\ue312"
+            ;;
+        *)
+            printf "%s\n" "Invalid icon!"
+            exit 1
+            ;;
+    esac
+}
+
+#  Get weather information
+function get_weather_short() {
+    WEATHERID=$(echo $RESPONSE| jq '.weather[0].id')
+    REALTEMP=$(echo $RESPONSE| jq '.main.temp')
+
+    printf "$(print_icon $WEATHERID) $(( ${REALTEMP%%.*} - 273 ))°C\n"
+}
+
+function get_weather_verbose() {
+    CITYNAME=$(echo $RESPONSE| jq '.name'| tr -d '\"')
+    COUNTRYCODE=$(echo $RESPONSE| jq '.sys.country'| tr -d '\"')
+    WEATHERID=$(echo $RESPONSE| jq '.weather[0].id')
+    WEATHERDESC=$(echo $RESPONSE| jq '.weather[0].description'| tr -d '\"')
+    REALTEMP=$(echo $RESPONSE| jq '.main.temp')
+    PERCTEMP=$(echo $RESPONSE| jq '.main.feels_like')
+    MINTEMP=$(echo $RESPONSE| jq '.main.temp_min')
+    MAXTEMP=$(echo $RESPONSE| jq '.main.temp_max')
+    HUMIDITY=$(echo $RESPONSE| jq '.main.humidity')
+    PRESSURE=$(echo $RESPONSE| jq '.main.pressure')
+    WINDSPEED=$(echo $RESPONSE| jq '.wind.speed')
+    WINDDIR=$(echo $RESPONSE| jq '.wind.deg')
+
+    printf "%s %s, %s:\n\n" \
+        "Weather in " $CITYNAME $COUNTRYCODE
+
+    printf "    Condition:            $(print_icon $WEATHERID) (%s)\n" \
+        "$WEATHERDESC"
+
+    printf "    Temperature:          %d°C (feels like: %d°C)\n" \
+        $(( ${REALTEMP%%.*} - 273 )) $(( ${PERCTEMP%%.*} - 273 ))
+
+    printf "    Temperature forecast: MIN --> %d°C, MAX --> %d°C\n" \
+        $(( ${MINTEMP%%.*} - 273 )) $(( ${MAXTEMP%%.*} - 273 ))
+
+    printf "    Humidity:             %d%%\n" \
+        ${HUMIDITY%%.*}
+
+    printf "    Pressure:             %d hPa\n" \
+        ${PRESSURE%%.*}
+
+    printf "    Wind:                 %.1f m/s (direction: %d°)\n" \
+        $WINDSPEED ${WINDDIR%%.*}
 }
 
 # Parse options
-while getopts ":hs" opt; do
-  case $opt in
-    h)
-      show_help
-      exit 0
-      ;;
-    s)
-      SHORT=1
-      ;;
-    \?)
-      printf "%s\n" "Invalid option: -$OPTARG." >&2
-      show_usage
-      exit 1
-      ;;
-    :)
-      printf "%s\n" "-$OPTARG requires an argument." >&2
-      show_usage
-      exit 1
-      ;;
-  esac
+while getopts ":hvsb" opt; do
+    case $opt in
+      h)
+          show_help
+          exit 0
+          ;;
+      v)
+          get_weather_verbose
+          exit 0
+          ;;
+      s)
+          get_weather_short
+          exit 0
+          ;;
+      b)
+          get_weather_short
+
+          case $BLOCK_BUTTON in
+              3)
+                  notify-send "Weather Information" "$(get_weather_verbose)"
+                  pkill -RTMIN+1 i3blocks
+                  exit 0
+                  ;;
+          esac
+          exit 0
+          ;;
+      \?)
+          printf "%s\n" "Invalid option: -$OPTARG." >&2
+          show_usage
+          exit 1
+          ;;
+      :)
+          printf "%s\n" "-$OPTARG requires an argument." >&2
+          show_usage
+          exit 1
+          ;;
+    esac
 done
 
 # ------------------------------------
 # COMMANDS AND INFO
 # ------------------------------------
+[[ -z $* ]] && (show_help && exit 1)
 
-# Check if necessary tools are installed
-if [[ ! -z $(which curl) ]]; then
-  CURL=$(which curl)
-else
-  printf "%s\n%s\n%s\n" \
-    "curl is not in the PATH." \
-    "You might have to install it. E.g.: sudo apt install curl" \
-    "curl is required for this script to work." >&2
-  exit 1
-fi
-
-if [[ ! -z $(which jq) ]]; then
-  JQ=$(which jq)
-else
-  printf "%s\n%s\n%s\n" \
-    "The JSON parser is not in the PATH." \
-    "You might have to install it. E.g.: sudo apt install jq" \
-    "The JSON parser JQ is required for this script to work." >&2
-  exit 1
-fi
-
-# Get weather report in JSON format
-# CODE='3165524' for Torino, Italy
-function get_report() {
-  URL='api.openweathermap.org/data/2.5/weather'
-  CODE='3165523'
-  UNITS='metric'
-  APPID='1303b30073ae867e2d12fd79dd5b6f09'
-
-  REQUEST="$URL?id=$CODE&units=$UNITS&APPID=$APPID"
-
-  REPORT=$(curl -Ss $REQUEST)
-
-  echo $REPORT
-}
-
-# Process JSON response
-function json_report() {
-  NAME=$(get_report | $JQ --raw-output '. | .name')
-  TEMP=$(get_report | $JQ --raw-output '. | if .main.temp-(.main.temp%10) < 0.5 then (.main.temp|floor) else (.main.temp|floor)+1 end')
-  MAIN=$(get_report | $JQ --raw-output '. | .weather[0].main')
-  DESC=$(get_report | $JQ --raw-output '. | .weather[0].description')
-
-  case $DESC in
-    "clear sky")
-      ICON="\ue30d"
-      ;;
-    "few clouds")
-      ICON="\ue302"
-      ;;
-    "scattered clouds")
-      ICON="\ue33d"
-      ;;
-    "broken clouds"|"overcast clouds")
-      ICON="\ue312"
-      ;;
-    "shower rain"|"moderate rain")
-      ICON="\ue309"
-      ;;
-    rain|"light rain")
-      ICON="\ue308"
-      ;;
-    thunderstorm)
-      ICON="\ue30d"
-      ;;
-    "light snow"|snow)
-      ICON="\ue30a"
-      ;;
-    mist|fog)
-      ICON="\ue303"
-      ;;
-    *)
-      ICON="Unable to fetch weather info."
-      ;;
-  esac
-  
-  if [[ $ICON != "Unable to fetch weather info." ]]; then
-    case $1 in
-      s|short)
-        echo -e "$TEMP°C $ICON"
-        ;;
-      l|long)
-        echo -e "$NAME: $TEMP°C ($MAIN) $ICON"
-        ;;
-      *)
-        printf "%s\n" "Invalid argument: unable to parse weather info." >&2
-        exit 1
-        ;;
-    esac
-  else
-    printf "%s\n" "$ICON" >&2
-    exit 1
-  fi
-}
-
-# Clickable block when using i3blocks in i3wm
-case $BLOCK_BUTTON in
-  1)
-    /usr/bin/pkill -RTMIN+1 i3blocks
-    ;;
-  2)
-    /usr/bin/pkill -RTMIN+1 i3blocks
-    ;;
-  3)
-    /usr/bin/pkill -RTMIN+1 i3blocks
-    $BROWSER "https://openweathermap.org" &> /dev/null
-    ;;
-esac
-
-# Run the command
-if [[ ! -z $SHORT ]]; then
-  json_report short
-else
-  json_report long
-fi
-exit 0
-
+# vim: ft=sh
