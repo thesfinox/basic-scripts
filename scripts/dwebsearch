@@ -1,0 +1,104 @@
+#! /usr/bin/env bash
+
+#
+# Look on the web.
+#
+# Perform a web search on Duckduckgo.com.
+#
+# Author:     Riccardo Finotello
+# E-mail:     riccardo.finotello@gmail.com
+#
+# Copyright:  2020 - Riccardo Finotello
+# License:    MIT License
+#
+
+# ------------------------------------
+# OPTIONS, HELP, USAGE AND CHECKS
+# ------------------------------------
+
+# Show usage
+function show_usage() {
+    USAGE="$(basename $0) [-h] [-i] [-y] [-w]"
+    printf "\n%s\n%s\n" "Usage:" "    $USAGE"
+}
+
+# Show help
+function show_help() {
+    show_usage
+
+    printf "\n%s\n\n" "Look on the web."
+    printf "%s\n" "OPTIONS:"
+    printf "%s\n" "    -h         Show this help and exit"
+    printf "%s\n" "    -i         Look on the Internet"
+    printf "%s\n" "    -y         Look on Youtube"
+    printf "%s\n" "    -w         Look on Wikipedia"
+
+    printf "\n%s\n%s\n\n" \
+           "For bug report and info: riccardo.finotello@gmail.com" \
+           "Copyright (c) 2020 - Riccardo Finotello - MIT License"
+}
+
+# Check if X11 menu is installed
+[[ -x $(which dmenu) ]] && XMENU=dmenu || exit 1
+
+# Load or create search history
+HST=$XDG_CACHE_HOME/dsearch/dsearch_hst
+[[ ! -f $HST ]] && (mkdir -p $XDG_CACHE_HOME/dsearch 2> /dev/null \
+                    && touch $HST)
+
+# Check if browser is defined
+[[ $BROWSER ]] && URLOPEN=$BROWSER || URLOPEN=xdg-open
+
+# Parse options
+while getopts ":hiyw" opt; do
+    case $opt in
+      h)
+          show_help
+          exit 0
+          ;;
+      \?)
+          printf "%s\n" "Invalid option: -$OPTARG." >&2
+          show_usage
+          exit 1
+          ;;
+      i)
+          cat $HST| $XMENU -i -l 20 -p "Web search: "| \
+              tee -a $HST| \
+              xargs -r -I{} $URLOPEN --new-window \
+              "https://duckduckgo.com/?q={}"
+
+          TMP=$(uniq -i $HST) && [[ $TMP ]] && echo $TMP > $HST
+          exit 0
+          ;;
+      y)
+          cat $HST| $XMENU -i -l 20 -p "Youtube search: "| \
+              tee -a $HST| \
+              xargs -r -I{} $URLOPEN --new-window \
+              "https://www.youtube.com/results?search_query={}"
+
+          TMP=$(uniq -i $HST) && [[ $TMP ]] && echo $TMP > $HST
+          exit 0
+          ;;
+      w)
+          cat $HST| $XMENU -i -l 20 -p "Wikipedia search: "| \
+              tee -a $HST| \
+              xargs -r -I{} $URLOPEN --new-window \
+              "https://wikipedia.org/w/index.php?search={}"
+
+          TMP=$(uniq -i $HST) && [[ $TMP ]] && echo $TMP > $HST
+          exit 0
+          ;;
+      :)
+          printf "%s\n" "-$OPTARG requires an argument." >&2
+          show_usage
+          exit 1
+          ;;
+    esac
+done
+
+# ------------------------------------
+# COMMANDS AND INFO
+# ------------------------------------
+[[ -z $* ]] && (show_help && exit 1)
+
+# vim: ft=sh

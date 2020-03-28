@@ -1,15 +1,14 @@
 #! /usr/bin/env bash
 
 #
-# Open bookmarked URLs.
+# Open bookmarks.
 #
-# This script reads and edits a bookmark file and has the user select and open
-# one of them in a browser session.
+# Read bookmarks list and open links in a browser window.
 #
 # Author:     Riccardo Finotello
 # E-mail:     riccardo.finotello@gmail.com
 #
-# Copyright:  2019 - Riccardo Finotello and Alessandra Cappati
+# Copyright:  2020 - Riccardo Finotello
 # License:    MIT License
 #
 
@@ -19,132 +18,64 @@
 
 # Show usage
 function show_usage() {
-  USAGE="$(basename $0) [-h] [-e] [-u URL && -n NAME]"
-  printf "\n%s\n%s\n" "Usage:" "    $USAGE"
+    USAGE="$(basename $0) [-h] [-e] [-m]"
+    printf "\n%s\n%s\n" "Usage:" "    $USAGE"
 }
 
 # Show help
 function show_help() {
-  show_usage
-
-  printf "\n%s\n\n" "Open bookmarked URLs."
-  printf "%s\n" "OPTIONS:"
-  printf "%s\n" "    -h         Show this help and exit"
-  printf "%s\n" "    -e         Edit the bookmark file"
-  printf "%s\n" "    -m         Open selection menu"
-  printf "%s\n" "    -u URL     add URL of the bookmark"
-  printf "%s\n" "    -n NAME    NAME of the new bookmark (use with -u)"
-
-  printf "\n%s\n%s\n\n" \
-    "For bug report and info: riccardo.finotello@gmail.com" \
-    "Copyright (c) 2019 - Riccardo Finotello and Alessandra Cappati - MIT License"
+    show_usage
+  
+    printf "\n%s\n\n" "Open bookmarked URLs."
+    printf "%s\n" "OPTIONS:"
+    printf "%s\n" "    -h         Show this help and exit"
+    printf "%s\n" "    -e         Edit the bookmark file"
+    printf "%s\n" "    -m         Open selection menu"
+  
+    printf "\n%s\n%s\n\n" \
+      "For bug report and info: riccardo.finotello@gmail.com" \
+      "Copyright (c) 2020 - Riccardo Finotello - MIT License"
 }
 
 # Check if the X11 menu is installed
-if [[ -x $(which dmenu) ]]; then
-  XMENU=$(which dmenu)
-else
-  printf "%s\n%s\n%s\n" \
-    "The X menu is not in your path." \
-    "You might want to add it. E.g.: sudo pacman -Syu dmenu" \
-    "The script will not work without it." >&2
-  exit 1
-fi
+[[ -x $(which dmenu) ]] && XMENU=dmenu || exit 1
 
-# Choose the configuration file
-if [[ -f $HOME/.config/dbookmarks/bookmarks.list ]]; then
-  CONFIG=$HOME/.config/dbookmarks/bookmarks.list
-elif [[ -f $(xdg-user-dir CONFIG)/dbookmarks/bookmarks.list ]]; then
-  CONFIG=$(xdg-user-dir CONFIG)/dbookmarks/bookmarks.list
-else
-  mkdir -p $HOME/.config/dbookmarks 2> /dev/null
-  touch $HOME/.config/dbookmarks/bookmarks.list
-  CONFIG=$HOME/.config/dbookmarks/bookmarks.list
-fi
+# Check if browser is set
+[[ -n $BROWSER ]] && URLOPEN=$BROWSER || URLOPEN=xdg-open
 
-# Function to edit the file
-function edit_file() {
-  if [[ -x $(which vim) ]]; then
-    $(which vim) $CONFIG
-  elif [[ -x $(which emacs) ]]; then
-    $(which emacs) $CONFIG
-  elif [[ -x $(which xdg-open) ]]; then
-    $(which xdg-open) $CONFIG
-  else
-    $(which nano) $CONFIG
-  fi
-}
-
-# Open selection menu
-function selection_menu() {
-  if [[ -n $XMENU ]]; then
-    CHOICE=$(awk -F';' '{print $1 " (" $2 ")"}' $CONFIG | \
-      sort | \
-      $XMENU -i -l 15 -p "Select URL" | \
-      sed 's/.*(\(.*\)).*/\1/g' )
-  fi
-
-  if [[ -n $CHOICE ]]; then
-    if [[ -n $BROWSER ]]; then
-      $BROWSER $CHOICE
-    elif [[ -x $(which xdg-open) ]]; then
-      $(which xdg-open) $CHOICE
-    else
-      printf "%s\n" $CHOICE
-    fi
-  fi
-}
+# Choose the bookmarks list
+LIST=$XDG_DATA_HOME/dbookmarks/bookmarks.txt
+[[ ! -f $LIST ]] && (mkdir -p $XDG_DATA_HOME/dbookmarks 2> /dev/null \
+                     && touch $LIST)
 
 # Parse options
-while getopts ":hemu:n:" opt; do
-  case $opt in
-    h)
-      show_help
-      exit 0
-      ;;
-    e)
-      edit_file
-      exit 0
-      ;;
-    m)
-      selection_menu
-      exit 0
-      ;;
-    u)
-      URL=$OPTARG
-      ;;
-    n)
-      NAME=$OPTARG
-      ;;
-    \?)
-      printf "%s\n" "Invalid option: -$OPTARG." >&2
-      show_usage
-      exit 1
-      ;;
-    :)
-      printf "%s\n" "-$OPTARG requires an argument." >&2
-      show_usage
-      exit 1
-      ;;
-  esac
+while getopts ":hem" opt; do
+    case $opt in
+      h)
+        show_help
+        exit 0
+        ;;
+      e)
+        [[ $EDITOR ]] && $EDITOR $LIST || xdg-open $LIST
+        exit 0
+        ;;
+      m)
+        cat $LIST| sort| column -t -s'^^^'| \
+            $XMENU -i -l 20 -p 'Web bookmarks: '| awk '{print $NF}'| \
+            xargs -r $BROWSER --new-window
+        exit 0
+        ;;
+      \?)
+        printf "%s\n" "Invalid option: -$OPTARG." >&2
+        show_usage
+        exit 1
+        ;;
+      :)
+        printf "%s\n" "-$OPTARG requires an argument." >&2
+        show_usage
+        exit 1
+        ;;
+    esac
 done
 
-# ------------------------------------
-# COMMANDS AND INFO
-# ------------------------------------
-
-if [[ -z $1 ]]; then
-  show_help
-  exit 1
-fi
-
-if [[ ! -n $URL ]]; then
-  printf "%s\n" "Missing URL!"
-  exit 1
-fi
-
-if [[ ! -n $NAME ]]; then
-  printf "%s\n" "Missing name/description!"
-fi
-
-echo "$NAME;$URL" >> $CONFIG
+# vim: ft=sh

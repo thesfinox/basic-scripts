@@ -1,15 +1,14 @@
 #! /usr/bin/env bash
 
 #
-# Show dmenu/rofi list of all man pages and display them.
+# Select and display man page.
 #
-# Search through the Linux man pages and display a X menu selector. Then show
-# the man page.
+# Search and select for a man page and display it as PDF.
 #
 # Author:     Riccardo Finotello
 # E-mail:     riccardo.finotello@gmail.com
 #
-# Copyright:  2019 - Riccardo Finotello and Alessandra Cappati
+# Copyright:  2020 - Riccardo Finotello
 # License:    MIT License
 #
 
@@ -19,84 +18,57 @@
 
 # Show usage
 function show_usage() {
-  USAGE="$(basename $0) [-h]"
-  printf "\n%s\n%s\n" "Usage:" "    $USAGE"
+    USAGE="$(basename $0) [-h]"
+    printf "\n%s\n%s\n" "Usage:" "    $USAGE"
 }
 
 # Show help
 function show_help() {
-  show_usage
-
-  printf "\n%s\n\n" "Show dmenu list of all man pages and display them."
-  printf "%s\n" "OPTIONS:"
-  printf "%s\n" "    -h         Show this help and exit"
-
-  printf "\n%s\n%s\n\n" \
-    "For bug report and info: riccardo.finotello@gmail.com" \
-    "Copyright (c) 2019 - Riccardo Finotello and Alessandra Cappati - MIT License"
+    show_usage
+  
+    printf "\n%s\n\n" "Select and display man page."
+    printf "%s\n" "OPTIONS:"
+    printf "%s\n" "    -h         Show this help and exit"
+  
+    printf "\n%s\n%s\n\n" \
+      "For bug report and info: riccardo.finotello@gmail.com" \
+      "Copyright (c) 2020 - Riccardo Finotello - MIT License"
 }
 
 # Parse options
 while getopts ":h" opt; do
-  case $opt in
-    h)
-      show_help
-      exit 0
-      ;;
-    \?)
-      printf "%s\n" "Invalid option: -$OPTARG." >&2
-      show_usage
-      exit 1
-      ;;
-    :)
-      printf "%s\n" "-$OPTARG requires an argument." >&2
-      show_usage
-      exit 1
-      ;;
-  esac
+    case $opt in
+      h)
+        show_help
+        exit 0
+        ;;
+      \?)
+        printf "%s\n" "Invalid option: -$OPTARG." >&2
+        show_usage
+        exit 1
+        ;;
+      :)
+        printf "%s\n" "-$OPTARG requires an argument." >&2
+        show_usage
+        exit 1
+        ;;
+    esac
 done
 
 # Check if dmenu/rofi are installed
-if [[ -x $(which dmenu) ]]; then
-  XMENU=$(which dmenu)
-else
-  printf "%s\n%s\n%s\n" \
-    "No X11 menu have been found." \
-    "You should consider installing one. E.g.: sudo pacman -S dmenu." \
-    "The script will not continue without it."
-  exit 1
-fi
+[[ -x $(which dmenu) ]] && XMENU=dmenu || exit 1
 
 # Check if a PDF reader is installed
-if [[ -x $(which zathura) ]]; then
-  PDFOPEN=$(which zathura)
-elif [[ -x $(which mupdf) ]]; then
-  PDFOPEN=$(which mupdf)
-elif [[ -x $(which evince) ]]; then
-  PDFOPEN=$(which evince)
-elif [[ -x $(which okular) ]]; then
-  PDFOPEN=$(which okular)
-elif [[ -x $(which xdg-open) ]]; then
-  PDFOPEN=$(which xdg-open)
-else
-  printf "%s\n%s\n%s\n" \
-    "No PDF reader has not been found." \
-    "You should consider installing one. E.g.: sudo pacman -S mupdf." \
-    "The script will not continue without it."
-  exit 1
-fi
+[[ $READER ]] && PDFOPEN=$READER || PDFOPEN=xdg-open
 
 # ------------------------------------
 # COMMANDS AND INFO
 # ------------------------------------
+MANPAGE=$(apropos .| sort| sed 's/[)] *- /)^^^/'| column -t -s'^^^'| \
+          $XMENU -i -l 20 -p 'Man pages: '| awk '{print $1}')
 
-MANPAGE=$(man -k . | $XMENU -i -l 10 -p "Choose the man page" | awk '{print $1}')
-
-if [[ $MANPAGE ]]; then
-  TMP=$(mktemp /tmp/dman_XXXXXX.pdf)
-  man -Tpdf $MANPAGE > $TMP
-  $PDFOPEN $TMP
-  rm $TMP
-fi
+[[ $MANPAGE ]] && (man -Tpdf $MANPAGE| $READER -) || exit 1
 
 exit 0
+
+# vim: ft=sh

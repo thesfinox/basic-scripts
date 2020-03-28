@@ -130,7 +130,7 @@ function json_report() {
     thunderstorm)
       ICON="\ue30d"
       ;;
-    snow)
+    "light snow"|snow)
       ICON="\ue30a"
       ;;
     mist|fog)

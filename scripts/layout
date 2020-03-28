@@ -1,14 +1,14 @@
 #! /usr/bin/env bash
 
 #
-# Read and display current layout.
+# Current keyboard layout.
 #
-# The scripts reads and display the current keyboard layout.
+# The scripts reads and displays the current keyboard layout.
 #
 # Author:     Riccardo Finotello
 # E-mail:     riccardo.finotello@gmail.com
 #
-# Copyright:  2019 - Alessandra Cappati and Riccardo Finotello
+# Copyright:  2020 - Riccardo Finotello
 # License:    MIT License
 #
 
@@ -26,7 +26,7 @@ function show_usage() {
 function show_help() {
   show_usage
 
-  printf "\n%s\n\n" "Read and display current layout"
+  printf "\n%s\n\n" "Display current layout"
   printf "%s\n" "OPTIONS:"
   printf "%s\n" "    -h    Show this help and exit"
   printf "%s\n" "    -s    Short version"
@@ -35,43 +35,27 @@ function show_help() {
 
   printf "\n%s\n%s\n\n" \
     "For bug report and info: riccardo.finotello@gmail.com" \
-    "Copyright (c) 2019 - Alessandra Cappati and Riccardo Finotello - MIT License"
+    "Copyright (c) 2020 - Riccardo Finotello - MIT License"
 }
 
-# Check existence of xkblayout-state
-if [[ ! -z $(which xkblayout-state) ]]; then
-  XKB=$(which xkblayout-state)
-else
-  printf "%s\n%s\n%s\n" \
-    "xkblayout-state is not in your PATH." \
-    "You might want to install it. E.g.: git clone https://github.com/nonpop/xkblayout-state." \
-    "The script entirely depends on this utility." >&2
-  exit 1
-fi
-
-# Check if notification client is present
-if [[ ! -z $(which notify-send) ]]; then
-  NOTIFICATIONS=$(which notify-send)
-else
-  printf "%s\n%s\n%s\n" \
-    "The notification client is not in the PATH." \
-    "You might have to install it. E.g.: sudo apt install ruby-notify." \
-    "Some of the functionalities of this script may be compromised otherwise." >&2
-fi
+# Check if xkblayout-state is installed
+[[ -x $(which xkblayout-state) ]] && XKB=xkblayout-state || exit 1
 
 # Clickable widget
 function clickable_widget() {
   case $BLOCK_BUTTON in
     1)
-      $(which pkill) -RTMIN+1 i3blocks
+      pkill -RTMIN+1 i3blocks
       $XKB set +1
       ;;
     2)
-      $(which pkill) -RTMIN+1 i3blocks
+      pkill -RTMIN+1 i3blocks
       ;;
     3)
-      $NOTIFICATIONS "Input Layout" "Current layout: $($XKB print %n)\nAvailable layout(s): $($XKB print %N)"
-      $(which pkill) -RTMIN+1 i3blocks
+      notify-send \
+          "Input Layout" \
+          "Current: $($XKB print %n)\nAvailable: $($XKB print %N| xargs)"
+      pkill -RTMIN+1 i3blocks
       ;;
   esac
 }
@@ -113,9 +97,6 @@ done
 # ------------------------------------
 # COMMANDS AND INFO
 # ------------------------------------
+[[ -z $* ]] && (show_help && exit 1)
 
-if [[ -z $1 ]]; then
-  show_help
-  exit 1
-fi
-
+# vim: ft=sh

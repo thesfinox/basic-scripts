@@ -1,15 +1,14 @@
 #! /usr/bin/env bash
 
 #
-# Attach to existing Tmux session
+# Reattach to Tmux session.
 #
-# The script lists available Tmux sessions and uses rofi/dmenu to give a choice
-# to attach to one of them.
+# Reattach to a previously closed or detached terminal multiplexer session.
 #
 # Author:     Riccardo Finotello
 # E-mail:     riccardo.finotello@gmail.com
 #
-# Copyright:  2019 - Riccardo Finotello and Alessandra Cappati
+# Copyright:  2020 - Riccardo Finotello
 # License:    MIT License
 #
 
@@ -19,69 +18,63 @@
 
 # Show usage
 function show_usage() {
-  USAGE="$(basename $0) [-h]"
-  printf "\n%s\n%s\n" "Usage:" "    $USAGE"
+    USAGE="$(basename $0) [-h] [-n] [-r]"
+    printf "\n%s\n%s\n" "Usage:" "    $USAGE"
 }
 
 # Show help
 function show_help() {
-  show_usage
-
-  printf "\n%s\n\n" "Attach to existing Tmux session"
-  printf "%s\n" "OPTIONS:"
-  printf "%s\n" "    -h         Show this help and exit"
-
-  printf "\n%s\n%s\n\n" \
-    "For bug report and info: riccardo.finotello@gmail.com" \
-    "Copyright (c) 2019 - Riccardo Finotello and Alessandra Cappati - MIT License"
+    show_usage
+  
+    printf "\n%s\n\n" "Reattach to Tmux session."
+    printf "%s\n" "OPTIONS:"
+    printf "%s\n" "    -h         Show this help and exit"
+    printf "%s\n" "    -n         Open a new session"
+    printf "%s\n" "    -r         Reattach to session"
+  
+    printf "\n%s\n%s\n\n" \
+      "For bug report and info: riccardo.finotello@gmail.com" \
+      "Copyright (c) 2020 - Riccardo Finotello - MIT License"
 }
 
+# Check if X11 menu is installed
+[[ -x $(which dmenu) ]] && XMENU=dmenu || exit 1
+
+# Check if Tmux is installed
+[[ -x $(which tmux) ]] && TMUX=tmux || exit 1
+
 # Parse options
-while getopts ":h" opt; do
-  case $opt in
-    h)
-      show_help
-      exit 0
-      ;;
-    \?)
-      printf "%s\n" "Invalid option: -$OPTARG." >&2
-      show_usage
-      exit 1
-      ;;
-    :)
-      printf "%s\n" "-$OPTARG requires an argument." >&2
-      show_usage
-      exit 1
-      ;;
-  esac
+while getopts ":hnr" opt; do
+    case $opt in
+      h)
+        show_help
+        exit 0
+        ;;
+      \?)
+        printf "%s\n" "Invalid option: -$OPTARG." >&2
+        show_usage
+        exit 1
+        ;;
+      n)
+        $TERMINAL -e $TMUX -f $XDG_CONFIG_HOME/tmux/config -2
+        exit 0
+        ;;
+      r)
+        $TMUX list-sessions| grep -i -v 'attached'| \
+              dmenu -i -l 20 -p 'Tmux detached sessions: '| \
+              awk -F': ' '{print $1}'| \
+              xargs -r -I{} $TERMINAL -e tmux attach-session -d -t {}
+        exit 0
+        ;;
+      :)
+        printf "%s\n" "-$OPTARG requires an argument." >&2
+        show_usage
+        exit 1
+        ;;
+    esac
 done
 
 # ------------------------------------
 # COMMANDS AND INFO
 # ------------------------------------
-
-# Check if Tmux is installed
-if [[ ! -z $(which tmux) ]]; then
-  TMUX=$(which tmux)
-else
-  printf "%s\n%s\n%s\n" \
-    "Tmux is not in your PATH" \
-    "You might want to install it. E.g.: sudo pacman -Syu tmux." \
-    "The script will not work without it." >&2
-  exit 1
-fi
-
-# Check if rofi/dmenu is installed
-if [[ ! -z $(which dmenu) ]]; then
-  XMENU=$(which dmenu)
-else
-  printf "%s\n%s\n%s\n" \
-    "There is no X menu installed." \
-    "You might want to install it. E.g.: sudo pacman -Syu dmenu." \
-    "The script cannot work without it." >&2
-  exit 1
-fi
-
-# List detached sessions and ask
-ID=$($TMUX list-sessions | grep -i -v "attached" | $XMENU -i -l 10 -p "Choose session: " | awk -F ': ' '{print $1}')
-$TMUX attach-session -d -t $ID
+[[ -z $* ]] && (show_help && exit 1)

@@ -11,7 +11,7 @@
 # Author:     Riccardo Finotello
 # E-mail:     riccardo.finotello@gmail.com
 #
-# Copyright:  Alessandra Cappati and Riccardo Finotello - 2019
+# Copyright:  2020 - Riccardo Finotello
 # License:    MIT License
 #
 
@@ -37,39 +37,17 @@ function show_help() {
 
   printf "\n%s\n%s\n\n" \
     "For bug report and info: riccardo.finotello@gmail.com" \
-    "Copyright (c) 2019 - Alessandra Cappati and Riccardo Finotello - MIT License"
+    "Copyright (c) 2020 - Riccardo Finotello - MIT License"
 }
 
 # Check if the clipboard manager is installed
-if [[ ! -z $(which parcellite) ]]; then
-  CLIPBOARD=$(which parcellite)
-else
-  printf "%s\n%s\n%s\n" \
-    "The clipboard manager is not in the PATH." \
-    "You might have to install it. E.g.: sudo pacman -S parcellite." \
-    "The clipboard manager is required for this script to run." >&2
-  exit 1
-fi
+[[ -x $(which parcellite) ]] && CLIPBOARD=parcellite || exit 1
 
 # Check if the Python module to generate QR codes is installed
-if [[ ! -z $(which qr) ]]; then
-  QR=$(which qr)
-else
-  printf "%s\n%s\n%s\n" \
-    "The QR code generator is not in the PATH." \
-    "You might have to install it. E.g.: sudo apt install python-qrenconde." \
-    "Some of the functionalities of this script may be compromised otherwise." >&2
-fi
+[[ -x $(which qr) ]] && QR=qr || exit 1
 
-# Check if the notification client is installed
-if [[ ! -z $(which notify-send) ]]; then
-  NOTIFICATIONS=$(which notify-send)
-else
-  printf "%s\n%s\n%s\n" \
-    "The notification client is not in the PATH." \
-    "You might have to install it. E.g.: sudo apt install ruby-notify." \
-    "Some of the functionalities of this script may be compromised otherwise." >&2
-fi
+# Define the image viewer
+[[ -x $(which feh) ]] && IMG=feh || IMG=xdg-open
 
 # Show clipboard content
 function show_clipboard() {
@@ -108,7 +86,7 @@ function send_notification() {
       ;;
   esac
 
-  $NOTIFICATIONS -a "Clipboard" "$TITLE" "$(show_clipboard $ARG)"
+  notify-send "$TITLE" "$(show_clipboard $ARG)"
 }
 
 function show_notification() {
@@ -129,19 +107,9 @@ function show_notification() {
 function choose_img_viewer() {
   ARG=${1:0:1}
 
-  if [[ ! -z $DISPLAY ]]; then
-    if [[ ! -z $(which feh) ]]; then
-      $CLIPBOARD -$ARG | $QR | $(which feh) -Z -
-    elif [[ ! -z $(which sxiv ) ]]; then
-      TMPFILE=$(mktemp /tmp/qr_XXXXXXXXX.png)
-      $CLIPBOARD -$ARG | $QR > $TMPFILE
-      $(which sxiv) $TMPFILE
-    else
-      $CLIPBOARD -$ARG | $QR
-    fi
-  else
-    $CLIPBOARD -$ARG | $QR
-  fi
+  [[ $DISPLAY ]] \
+      && ($CLIPBOARD -$ARG| $QR| $IMG -Z -) \
+      || ($CLIPBOARD -$ARG| $QR)
 }
 
 function show_qr() {
@@ -171,24 +139,14 @@ while getopts ":hc:n:q:" opt; do
       exit 0
       ;;
     n)
-      if [[ ! -z $NOTIFICATIONS ]] && [[ ! -z $DISPLAY ]]; then
-        show_notification $OPTARG
-        exit 0
-      else
-        printf "%s\n" \
-          "It is impossible to show notifications at this time." >&2
-        exit 1
-      fi
+      [[ $DISPLAY ]] \
+          && (show_notification $OPTARG && exit 0) \
+          || (printf "%s\n" "Unable to show notifications." >&2 && exit 1)
       ;;
     q)
-      if [[ ! -z $QR ]]; then
-        show_qr $OPTARG
-        exit 0
-      else
-        printf "%s\n" \
-          "It is impossible to encode a QR code at this time." >&2
-        exit 1
-      fi
+      [[ $QR ]] \
+          && (show_qr $OPTARG && exit 0) \
+          || (printf "%s\n" "Unable to encode a QR code." >&2 && exit 1)
       ;;
     \?)
       printf "%s\n" "Invalid option: -$OPTARG is not an option." >&2
@@ -207,7 +165,9 @@ while getopts ":hc:n:q:" opt; do
   esac
 done
 
-if [[ -z $1 ]]; then
-  show_help
-  exit 1
-fi
+# ------------------------------------
+# COMMANDS AND INFO
+# ------------------------------------
+[[ -z $* ]] && (show_help && exit 1)
+
+# vim: ft=sh

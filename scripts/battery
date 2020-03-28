@@ -90,7 +90,7 @@ STATUS=$(echo $BATTERYSTATUS | awk '{print $1}')
 PERCENTAGE=$(echo $BATTERYSTATUS | awk '{gsub("%",""); print $2}')
 TIME=$(echo $BATTERYSTATUS | awk '{print $3}')
 
-if [[ $PERCENTAGE -gt 95 ]]; then
+if [[ $PERCENTAGE -ge 95 ]]; then
   case $STATUS in
     Discharging)
       ICON="\uf118 \uf240"
@@ -99,7 +99,7 @@ if [[ $PERCENTAGE -gt 95 ]]; then
       ICON="\uf118 \uf492"
       ;;
   esac
-elif [[ $PERCENTAGE -gt 85 ]]; then
+elif [[ $PERCENTAGE -ge 85 ]]; then
   case $STATUS in
     Discharging)
       ICON="\uf103 \uf240"
@@ -108,7 +108,7 @@ elif [[ $PERCENTAGE -gt 85 ]]; then
       ICON="\uf102 \uf240"
       ;;
   esac
-elif [[ $PERCENTAGE -gt 40 ]]; then
+elif [[ $PERCENTAGE -ge 40 ]]; then
   case $STATUS in
     Discharging)
       ICON="\uf103 \uf242"
@@ -117,7 +117,7 @@ elif [[ $PERCENTAGE -gt 40 ]]; then
       ICON="\uf102 \uf242"
       ;;
   esac
-elif [[ $PERCENTAGE -gt 25 ]]; then
+elif [[ $PERCENTAGE -ge 25 ]]; then
   case $STATUS in
     Discharging)
       ICON="\uf103 \uf244"
@@ -126,7 +126,7 @@ elif [[ $PERCENTAGE -gt 25 ]]; then
       ICON="\uf102 \uf244"
       ;;
   esac
-elif [[ $PERCENTAGE -gt 10 ]]; then
+elif [[ $PERCENTAGE -ge 10 ]]; then
   case $STATUS in
     Discharging)
       ICON="\uf103 \uf60b"
