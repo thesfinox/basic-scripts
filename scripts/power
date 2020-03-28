@@ -1,18 +1,14 @@
 #! /usr/bin/env bash
 
 #
-# Logout/shutdown script.
+# Logout and shutdown.
 #
-# This is a logout/shutdown script. It assumes the presence of systemctl as a
-# init system  and i3 window manager as a default: it can (and most probably
-# will) be expanded for other window managers. It also implements a simple
-# interactive menu (rofi/dmenu) to select the command. The lock programme is by
-# default i3lock, while we assume that dunst is the notification server.
+# Manage logout and shutdown of the current session
 #
 # Author:     Riccardo Finotello
 # E-mail:     riccardo.finotello@gmail.com
 #
-# Copyright:  2019 - Alessandra Cappati and Riccardo Finotello
+# Copyright:  2020 - Riccardo Finotello
 # License:    MIT License
 #
 
@@ -22,308 +18,139 @@
 
 # Show usage
 function show_usage() {
-  USAGE="$(basename $0) [-h] [-m] [-c COMMAND] [-n STATUS] [-t]"
-  printf "\n%s\n%s\n" "Usage:" "    $USAGE"
+    USAGE="$(basename $0) [-h] [-l|-o|-s|-r|-p] [-m]"
+    printf "\n%s\n%s\n" "Usage:" "    $USAGE"
 }
 
 # Show help
 function show_help() {
-  show_usage
+    show_usage
 
-  printf "\n%s\n\n" "Logout/shutdown script."
-  printf "%s\n" "OPTIONS:"
-  printf "%s\n" "    -h            Show this help and exit"
-  printf "%s\n" "    -m            Shows an interactive menu"
-  printf "%s\n" "    -c COMMAND    Execute COMMAND and exit"
-  printf "%s\n" "    -n STATUS     Change the status of the notifications"
-  printf "%s\n" "    -t            Toggle the status of the notifications"
-  printf "\n%s\n" "COMMAND:"
-  printf "%s\n" "    l or lock     Lock the screen"
-  printf "%s\n" "    q or logout   Log out from the current session"
-  printf "%s\n" "    s or standby  Enter suspension mode"
-  printf "%s\n" "    r or reboot   Reboot the PC"
-  printf "%s\n" "    p or shutdown Shutdown the PC"
-  printf "\n%s\n" "STATUS:"
-  printf "%s\n" "    p or pause    Pause notifications"
-  printf "%s\n" "    r or resume   Resume notifications"
-  printf "%s\n" "    q or query    Query notifications state"
+    printf "\n%s\n\n" "Logout and shutdown"
+    printf "%s\n" "OPTIONS:"
+    printf "%s\n" "    -h         Show this help and exit"
+    printf "%s\n" "    -l         Lock the current session"
+    printf "%s\n" "    -o         Logout user"
+    printf "%s\n" "    -s         Enter standby mode"
+    printf "%s\n" "    -r         Reboot the system"
+    printf "%s\n" "    -p         Poweroff the system"
+    printf "%s\n" "    -m         Show selection menu"
 
-  printf "\n%s\n%s\n\n" \
-    "For bug report and info: riccardo.finotello@gmail.com" \
-    "Copyright (c) 2019 - Alessandra Cappati and Riccardo Finotello - MIT
-      License"
+    printf "\n%s\n%s\n\n" \
+           "For bug report and info: riccardo.finotello@gmail.com" \
+           "Copyright (c) 2020 - Riccardo Finotello - MIT License"
 }
 
-# Check if the notification server and client are installed
-if [[ ! -z $(which dunst) ]]; then
-  if [[ ! -z $(which notify-send) ]]; then
-    NOTIFICATIONS=$(which notify-send)
-  else
-    printf "%s\n%s\n%s\n" \
-      "The notification client is not in the PATH." \
-      "You might have to install it. E.g.: sudo apt install ruby-notify." \
-      "Some of the functionalities of this script may be compromised otherwise." >&2
-  fi
-else
-  printf "%s\n%s\n%s\n" \
-    "The default notification client is not installed." \
-    "You might have to install it. E.g.: sudo apt install dunst." \
-    "Some of the functionalities of this script may be compromised otherwise." >&2
-fi
+# Check if systemctl is installed
+[[ -x $(which systemctl) ]] || exit 1
 
-# Check if systemctl is in the PATH
-if [[ ! -z $(which systemctl) ]]; then
-  SYSTEMCTL=$(which systemctl)
-else
-  printf "%s\n%s\n%s\n" \
-    "Systemctl is not in the PATH." \
-    "Systemctl is a critical component of this script." \
-    "The script will not work unless systemctl is in the path." >&2
-  exit 1
-fi
+# Check if X11 menu is installed
+[[ -x $(which dmenu) ]] || exit 1
 
-# Check if the lock programme is installed
-if [[ ! -z $(which i3lock) ]]; then
-  LOCK=$(which i3lock)
-else
-  printf "%s\n%s\n%s\n" \
-    "The default screen locker is not in the PATH." \
-    "You might have to install it. E.g.: sudo apt install i3lock." \
-    "Some of the functionalities of this script may be compromised otherwise." >&2
-fi
+# Check if i3lock is installed
+[[ -x $(which i3lock) ]] || exit 1
+[[ -x $(which i3-msg) ]] || exit 1
 
-# Check if the exit script is installed
-if [[ ! -z $(which i3-msg) ]]; then
-  EXIT=$(which i3-msg)
-else
-  printf "%s\n%s\n%s\n" \
-    "The default window manager is i3." \
-    "We have not detected the correct logout script (i3-msg)." \
-    "Some of the functionalities of this script may be compromised." >&2
-fi
+# Check if the notifications can be muted and turned on
+[[ -x $(which dnotification) ]] || exit 1
 
-# Check if the xmenu script is installed
-if [[ ! -z $(which dmenu) ]]; then
-  XMENU=$(which dmenu)
-else
-  printf "%s\n%s\n%s\n" \
-    "The xmenu script is not in the PATH." \
-    "You might have to install it. E.g.: sudo pacman -Syu dmenu." \
-    "Some of the functionalities of this script may be compromised otherwise." >&2
-fi
+# Lock the system
+function lock_session() {
+    dnotification -S
 
-# Stop/start notifications
-function stop_notifications() {
-  if [[ ! -z $NOTIFICATIONS ]]; then
-    killall -SIGUSR1 dunst
-    echo -e "\ufba1 OFF" > $HOME/.notifications-state
-  fi
+    [[ -f $XDG_CONFIG_HOME/i3/lock-screen.png ]] \
+        && i3lock -i $XDG_CONFIG_HOME/i3/lock-screen.png -n \
+        || i3lock -n
+
+    dnotification -s
 }
 
-function resume_notifications() {
-  if [[ ! -z $NOTIFICATIONS ]]; then
-    killall -SIGUSR2 dunst
-    echo -e "\ufba0 ON" > $HOME/.notifications-state
-  fi
-}
+# Enter standby mode
+function standby_mode() {
+    dnotification -S
 
-# Screen lock
-function screen_lock() {
-  if [[ ! -z $LOCK ]]; then
-    if [[ -f $HOME/.config/i3/lock-screen.png ]]; then
-      LOCK="$LOCK -i $HOME/.config/i3/lock-screen.png"
-    fi
-    case $1 in
-      f|fork)
-        $LOCK
-        ;;
-      n|no-fork)
-        $LOCK -n
-        ;;
-      *)
-        printf "%s\n%s\n" \
-          "Invalid argument: '$1' is not a valid argument." \
-          "You must choose between 'fork' and 'not-fork'." >&2
-        ;;
-    esac
-  fi
-}
+    [[ -f $XDG_CONFIG_HOME/i3/lock-screen.png ]] \
+        && i3lock -i $XDG_CONFIG_HOME/i3/lock-screen.png \
+        || i3lock
 
-# Logout
-function i3logout() {
-  if [[ ! -z $EXIT ]]; then
-    $EXIT exit
-  fi
-}
+    systemctl suspend
 
-# Suspend
-function suspend_system() {
-  stop_notifications
-  screen_lock fork
-  if [[ ! -z $SYSTEMCTL ]]; then
-    $SYSTEMCTL suspend
-  fi
-  resume_notifications
-}
-
-# Reboot
-function reboot_system() {
-  if [[ ! -z $SYSTEMCTL ]]; then
-    $SYSTEMCTL reboot
-  fi
-}
-
-# Poweroff
-function poweroff_system() {
-  if [[ ! -z $SYSTEMCTL ]]; then
-    $SYSTEMCTL poweroff
-  fi
-}
-
-# Parse COMMAND
-function parse_command() {
-  case $1 in
-    l|lock)
-      stop_notifications
-      screen_lock no-fork
-      resume_notifications
-      ;;
-    q|logout)
-      i3logout
-      ;;
-    s|standby)
-      suspend_system
-      ;;
-    r|reboot)
-      reboot_system
-      ;;
-    p|shutdown)
-      poweroff_system
-      ;;
-    *)
-      printf "%s\n" "Invalid COMMAND: '$1' is not a valid argument." >&2
-      show_help
-      exit 1
-      ;;
-  esac
-}
-
-# Show option menu
-function show_menu() {
-  ACTIONS="Lock\nExit\nStandby\nReboot\nShutdown"  
-  RESP=$(echo -e "$ACTIONS" | $XMENU -i -l 5 -p "Poweroff menu. Choose your action: ")
-
-  if [[ ! -z $RESP ]]; then
-    case $RESP in
-      Lock)
-        stop_notifications
-        screen_lock no-fork
-        resume_notifications
-        ;;
-      Exit)
-        i3logout
-        ;;
-      Standby)
-        suspend_system
-        ;;
-      Reboot)
-        reboot_system
-        ;;
-      Shutdown)
-        poweroff_system
-        ;;
-      *)
-        printf "%s\n" "Invalid argument: '$RESP' is not a valid command." >&2
-        ;;
-    esac
-  fi
-}
-
-# Toggle notification state
-function toggle_notifications() {
-  if [[ $(cat ~/.notifications-state | awk '{print $2}') == "ON" ]]; then
-    stop_notifications
-  else
-    resume_notifications
-  fi
-}
-
-# Toggle notifications
-function change_notifications() {
-  if [[ ! -z $NOTIFICATIONS ]]; then
-    case $1 in
-      p|pause)
-        stop_notifications
-        ;;
-      r|resume)
-        resume_notifications
-        ;;
-      q|query)
-        cat $HOME/.notifications-state
-
-        case $BLOCK_BUTTON in
-          1)
-            toggle_notifications
-            /usr/bin/pkill -RTMIN+1 i3blocks
-            ;;
-          2)
-            /usr/bin/pkill -RTMIN+1 i3blocks
-            ;;
-          3)
-            /usr/bin/pkill -RTMIN+1 i3blocks
-            ;;
-        esac
-        ;;
-      *)
-        printf "%s\n" "Invalid argument: '$1' is not a valid STATUS" >&2
-        show_help
-        exit 1
-        ;;
-    esac
-  fi
+    dnotification -s
 }
 
 # Parse options
-while getopts ":hmc:n:t" opt; do
-  case $opt in
-    h)
-      show_help
-      exit 0
-      ;;
-    m)
-      show_menu
-      exit 0
-      ;;
-    c)
-      parse_command $OPTARG
-      exit 0
-      ;;
-    n)
-      change_notifications $OPTARG
-      exit 0
-      ;;
-    t)
-      toggle_notifications
-      exit 0
-      ;;
-    \?)
-      printf "%s\n" "Invalid option: -$OPTARG." >&2
-      show_usage
-      exit 1
-      ;;
-    :)
-      printf "%s\n" "-$OPTARG requires an argument." >&2
-      show_usage
-      exit 1
-      ;;
-  esac
+while getopts ":hlosrpm" opt; do
+    case $opt in
+      h)
+          show_help
+          exit 0
+          ;;
+      l)
+          lock_session
+          exit 0
+          ;;
+      o)
+          i3-msg exit
+          exit 0
+          ;;
+      s)
+          standby_mode
+          exit 0
+          ;;
+      r)
+          systemctl reboot
+          exit 0
+          ;;
+      p)
+          systemctl poweroff
+          exit 0
+          ;;
+      m)
+          CHOICE=$(echo -e "Lock\nExit\nStandby\nReboot\nShutdown"| \
+                   dmenu -i -l 5 -p "Poweroff menu: ")
+
+          case $CHOICE in
+              Lock)
+                  lock_session
+                  exit 0
+                  ;;
+              Exit)
+                  i3-msg exit
+                  exit 0
+                  ;;
+              Standby)
+                  standby_mode
+                  exit 0
+                  ;;
+              Reboot)
+                  systemctl reboot
+                  exit 0
+                  ;;
+              Shutdown)
+                  systemctl poweroff
+                  exit 0
+                  ;;
+              *)
+                  printf "%s\n" "Invalid choice!"
+                  ;;
+          esac
+          ;;
+      \?)
+          printf "%s\n" "Invalid option: -$OPTARG." >&2
+          show_usage
+          exit 1
+          ;;
+      :)
+          printf "%s\n" "-$OPTARG requires an argument." >&2
+          show_usage
+          exit 1
+          ;;
+    esac
 done
 
 # ------------------------------------
 # COMMANDS AND INFO
 # ------------------------------------
+[[ -z $* ]] && (show_help && exit 1)
 
-if [[ -z $1 ]]; then
-  show_help
-  exit 1
-fi
+# vim: ft=sh

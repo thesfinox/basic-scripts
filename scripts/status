@@ -9,7 +9,7 @@
 # Author:     Riccardo Finotello
 # E-mail:     riccardo.finotello@gmail.com
 #
-# Copyright:  2019 - Riccardo Finotello and Alessandra Cappati
+# Copyright:  2020 - Riccardo Finotello
 # License:    MIT License
 #
 
@@ -39,76 +39,24 @@ function show_help() {
 
   printf "\n%s\n%s\n\n" \
     "For bug report and info: riccardo.finotello@gmail.com" \
-    "Copyright (c) 2019 - Riccardo Finotello and Alessandra Cappati - MIT License"
+    "Copyright (c) 2020 - Riccardo Finotello - MIT License"
 }
 
 # Check if lm-sensors is installed
-if [[ -x $(which sensors) ]]; then
-  SENSORS=$(which sensors)
-else
-  printf "%s\n%s\n%s\n" \
-    "The sensor utility is not in the PATH." \
-    "You might have to add it. E.g.: sudo pacman -Syu lm-sensors." \
-    "The sensor utility is a critical component: the script will not work without it." >&2
-  exit 1
-fi
+[[ -x $(which sensors) ]] || exit 1
 
-# Check if LSB release is installed
-if [[ -x $(which lsb_release) ]]; then
-  LSB=$(which lsb_release)
-else
-  printf "%s\n%s\n%s\n" \
-    "lsb_release is not in the PATH." \
-    "You might have to add it. E.g.: sudo pacman -Syu lsb-release." \
-    "lsb_release is a critical component: the script will not work without it." >&2
-  exit 1
-fi
+# Check if lsb_release release is installed
+[[ -x $(which lsb_release) ]] || exit 1
 
 # Check if NVidia is installed
-if [[ -x $(which nvidia-smi) ]]; then
-  NVIDIA=$(which nvidia-smi)
-else
-  printf "%s\n%s\n%s\n" \
-    "nvidia-smi is not in the PATH." \
-    "You might have to add it. E.g.: sudo pacman -Syu nvidia-settings." \
-    "Some of the functionalities will not work without it." >&2
-fi
-
-# Show thermal readings
-function show_thermals() {
-  if [[ -n $SENSORS ]]; then
-    TEMP=$($SENSORS -u | grep -A1 "Package id 0" | \
-      awk -F': ' '/temp1_input/ {print int($2)}')
-    echo -e "\uf8c7 $TEMP°C"
-  fi
-}
-
-# Show CPU load (last minute)
-function show_load() {
-  LOAD=$(cat /proc/loadavg | awk '{print $1 "%"}')
-  echo -e "\uf437 $LOAD"
-}
-
-# Show available RAM
-function show_ram() {
-  RAM=$(free -h | awk '/^Mem/ {print $7}')
-  echo -e "\ufb19 $RAM"
-}
-
-# Show disk usage
-function show_disk() {
-  DFHOME=$(df -h | awk '/\/home$/ {print $5}')
-  DFROOT=$(df -h | awk '/\/$/ {print $5}')
-  echo -e "\ue216 $DFROOT \uf015 $DFHOME"
-}
+[[ -x $(which nvidia-smi) ]] || exit 1
 
 # Show OS info
 function show_os() {
-  if [[ -n $LSB ]]; then
-    OS=$($LSB -d | awk -F':' '{print $2}' | tr -d '\t')
+    OS=$(lsb_release -d| tr -d '\t '| awk -F':' '{print $2}')
     KERN=$(uname -r)
     case $OS in
-      "Arch Linux")
+      ArchLinux)
         echo -e "\uf303 $KERN"
         ;;
       Ubuntu)
@@ -133,71 +81,63 @@ function show_os() {
         echo -e "$OS - $KERN"
         ;;
     esac
-  fi
-}
-
-# Show current CPU in use
-function show_gpu() {
-  if [[ -n $NVIDIA ]]; then
-    GPU=$($NVIDIA -q -d PIDS | grep "Process ID")
-    if [[ -n $GPU ]]; then
-      echo -e "\uf1b2 NVidia"
-    else
-      echo -e "\uf0c8 Intel"
-    fi
-  fi
 }
 
 # Parse options
 while getopts ":htlrdog" opt; do
-  case $opt in
-    h)
-      show_help
-      exit 0
-      ;;
-    t)
-      show_thermals
-      exit 0
-      ;;
-    l)
-      show_load
-      exit 0
-      ;;
-    r)
-      show_ram
-      exit 0
-      ;;
-    d)
-      show_disk
-      exit 0
-      ;;
-    o)
-      show_os
-      exit 0
-      ;;
-    g)
-      show_gpu
-      exit 0
-      ;;
-    \?)
-      printf "%s\n" "Invalid option: -$OPTARG." >&2
-      show_usage
-      exit 1
-      ;;
-    :)
-      printf "%s\n" "-$OPTARG requires an argument." >&2
-      show_usage
-      exit 1
-      ;;
-  esac
+    case $opt in
+      h)
+          show_help
+          exit 0
+          ;;
+      t)
+          TEMP=$(sensors -u 2> /dev/null| grep -A1 'Package id'| \
+                 awk -F': ' '/temp1_input/ {print $2}')
+          echo -e "\uf8c7 ${TEMP%%.*}°C"
+          exit 0
+          ;;
+      l)
+          LOAD=$(awk '{print $1}' /proc/loadavg)
+          echo -e "\uf437 $LOAD"
+          exit 0
+          ;;
+      r)
+          RAM=$(( $(awk '/^MemAvailable/ {print $2}' /proc/meminfo) \
+                    / 1024 / 1024))
+          echo -e "\ufb19 $RAM GB"
+          exit 0
+          ;;
+      d)
+          DFROOT=$(df| awk '/\/$/ {print $5}')
+          DFHOME=$(df| awk '/\/home$/ {print $5}')
+          echo -e "\ue216 $DFROOT \uf015 $DFHOME"
+          exit 0
+          ;;
+      o)
+          show_os
+          exit 0
+          ;;
+      g)
+          GPU=$(nvidia-smi -q -d PIDS| grep 'Process ID')
+          [[ $GPU ]] && echo -e "\uf1b2 NVidia" || echo -e "\uf0c8 Intel"
+          exit 0
+          ;;
+      \?)
+        printf "%s\n" "Invalid option: -$OPTARG." >&2
+        show_usage
+        exit 1
+        ;;
+      :)
+        printf "%s\n" "-$OPTARG requires an argument." >&2
+        show_usage
+        exit 1
+        ;;
+    esac
 done
 
 # ------------------------------------
 # COMMANDS AND INFO
 # ------------------------------------
+[[ -z $* ]] && (show_help && exit 1)
 
-if [[ -z $1 ]]; then
-  show_help
-  exit 1
-fi
-
+# vim: ft=sh

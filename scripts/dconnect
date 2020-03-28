@@ -1,0 +1,132 @@
+#! /usr/bin/env bash
+
+#
+# Control WiFi interfaces.
+#
+# Toggle WiFi and show connected interfaces (and their IP addresses).
+#
+# Author:     Riccardo Finotello
+# E-mail:     riccardo.finotello@gmail.com
+#
+# Copyright:  2020 - Riccardo Finotello
+# License:    MIT License
+#
+
+# ------------------------------------
+# OPTIONS, HELP, USAGE AND CHECKS
+# ------------------------------------
+
+# Show usage
+function show_usage() {
+    USAGE="$(basename $0) [-h] [-c|-i|-o|-t DEVICE]"
+    printf "\n%s\n%s\n" "Usage:" "    $USAGE"
+}
+
+# Show help
+function show_help() {
+    show_usage
+
+    printf "\n%s\n\n" "Control WiFi interfaces."
+    printf "%s\n" "OPTIONS:"
+    printf "%s\n" "    -h         Show this help and exit"
+    printf "%s\n" "    -c         Show current connected interface"
+    printf "%s\n" "    -i         Show current internal IP address"
+    printf "%s\n" "    -o         Show current external IP address"
+    printf "%s\n" "    -t         Toggle WiFi"
+    printf "\n\n%s\n" "DEVICE:"
+    printf "%s\n" "    b or bluetooth"
+    printf "%s\n" "    w or wifi"
+
+    printf "\n%s\n%s\n\n" \
+           "For bug report and info: riccardo.finotello@gmail.com" \
+           "Copyright (c) 2020 - Riccardo Finotello - MIT License"
+}
+
+# Check if NetworkManager is installed
+[[ -x $(which nmcli) ]] || exit 1
+[[ -x $(which curl) ]] || exit 1
+[[ -x $(which ifconfig) ]] || exit 1
+
+# Check if X11 menu is installed
+[[ -x $(which dmenu) ]] || exit 1
+
+# Parse options
+while getopts ":hciot:" opt; do
+    case $opt in
+      h)
+          show_help
+          exit 0
+          ;;
+      c)
+          WIFI=$(nmcli device show wlp3s0| \
+                 awk -F':' '/^GENERAL[.]CONNECTION/ {print $2}'| sed 's/^ *//g')
+          STATE=$(nmcli device wifi| awk '/^[*]/ {print $8}')
+
+          ETH=$(nmcli device show enp0s31f6| \
+                awk -F':' '/^GENERAL[.]CONNECTION/ {print $2}'| sed 's/^ *//g')
+
+          ([[ $WIFI != '--' ]] && [[ $ETH != '--' ]]) \
+              && echo -e "\uf6ff $ETH\n\uf1eb $WIFI (${STATE}%)"
+          ([[ $WIFI == '--' ]] && [[ $ETH != '--' ]]) \
+              && echo -e "\uf6ff $ETH"
+          ([[ $WIFI != '--' ]] && [[ $ETH == '--' ]]) \
+              && echo -e "\uf1eb $WIFI (${STATE}%)"
+          ([[ $WIFI == '--' ]] && [[ $ETH == '--' ]]) \
+              && echo -e "\ufaa9 No connection"
+          exit 0
+          ;;
+      i)
+          WIFI=$(ifconfig| grep -A1 'wlp3s0'| awk '/\<inet\>/ {print $2}')
+          ETH=$(ifconfig| grep -A1 'enp0s31f6'| awk '/\<inet\>/ {print $2}')
+
+          ([[ $WIFI ]] && [[ $ETH ]]) && echo -e "\uf6ff $ETH\n\uf1eb $WIFI"
+          ([[ ! $WIFI ]] && [[ $ETH ]]) && echo -e "\uf6ff $ETH"
+          ([[ $WIFI ]] && [[ ! $ETH ]]) && echo -e "\uf1eb $WIFI"
+          ([[ ! $WIFI ]] && [[ ! $ETH ]]) && echo -e "\ufaa9 No connection"
+          exit 0
+          ;;
+      o)
+          echo -e "\uf484 $(curl -Ss ipinfo.io/ip)"
+          exit 0
+          ;;
+      t)
+          case $OPTARG in
+              w|wifi)
+                  CHOICE=$(echo -e "ON\nOFF"| \
+                           dmenu -i -p "Wifi (ON|OFF): ")
+                  [[ $CHOICE == 'ON' ]] && rfkill unblock 2
+                  [[ $CHOICE == 'OFF' ]] && rfkill block 2
+                  exit 0
+                  ;;
+              b|bluetooth)
+                  CHOICE=$(echo -e "ON\nOFF"| \
+                           dmenu -i -p "Bluetooth (ON|OFF): ")
+                  [[ $CHOICE == 'ON' ]] && rfkill unblock 0
+                  [[ $CHOICE == 'OFF' ]] && rfkill block 0
+                  exit 0
+                  ;;
+              *)
+                  printf "%s\n" "Wrong identifier!" >&2
+                  exit 1
+                  ;;
+          esac
+          ;;
+      \?)
+          printf "%s\n" "Invalid option: -$OPTARG." >&2
+          show_usage
+          exit 1
+          ;;
+      :)
+          printf "%s\n" "-$OPTARG requires an argument." >&2
+          show_usage
+          exit 1
+          ;;
+    esac
+done
+
+# ------------------------------------
+# COMMANDS AND INFO
+# ------------------------------------
+[[ -z $* ]] && (show_help && exit 1)
+
+# vim: ft=sh
