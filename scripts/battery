@@ -72,7 +72,9 @@ function get_status_icon() {
                 || ([[ $CAPACITY -ge 95 ]] && echo "\uf492" || echo "\uf128")
             ;;
         0)
-            [[ $POWERNOW -gt 0 ]] && echo "\uf103" || echo "\uf590"
+            [[ $POWERNOW -gt 0 ]] \
+                && ([[ $CAPACITY -ge 15 ]] && echo "\uf103" || echo "\uf071") \
+                || echo "\uf590"
             ;;
         *)
             printf "%s\n" "Invalid value!" >&2
@@ -97,13 +99,16 @@ function get_time_remaining() {
     [[ $HOURS ]] && printf "%d h %d min\n" "$HOURS" "$(( $TIME - 60 * $HOURS ))"
 }
 
+# Define power_supply dir
+[[ -d /sys/class/power_supply ]] && DIR=/sys/class/power_supply || exit 1
+
 # Verbose version
 function get_verbose() {
-    AC=$(cat /sys/class/power_supply/AC/online)
-    POWERNOW=$(cat /sys/class/power_supply/BAT0/power_now)
-    ENERGYFULL=$(cat /sys/class/power_supply/BAT0/energy_full)
-    ENERGYNOW=$(cat /sys/class/power_supply/BAT0/energy_now)
-    CAPACITY=$(cat /sys/class/power_supply/BAT0/capacity)
+    AC=$(cat $DIR/AC/online)
+    POWERNOW=$(cat $DIR/BAT0/power_now)
+    ENERGYFULL=$(cat $DIR/BAT0/energy_full)
+    ENERGYNOW=$(cat $DIR/BAT0/energy_now)
+    CAPACITY=$(cat $DIR/BAT0/capacity)
 
     # AC adapter
     [[ $AC -gt 0 ]] && echo "AC adapter: online" || echo "AC adapter: offline"
@@ -122,11 +127,11 @@ function get_verbose() {
 
 # Get short version
 function get_short() {
-    AC=$(cat /sys/class/power_supply/AC/online)
-    POWERNOW=$(cat /sys/class/power_supply/BAT0/power_now)
-    ENERGYFULL=$(cat /sys/class/power_supply/BAT0/energy_full)
-    ENERGYNOW=$(cat /sys/class/power_supply/BAT0/energy_now)
-    CAPACITY=$(cat /sys/class/power_supply/BAT0/capacity)
+    AC=$(cat $DIR/AC/online)
+    POWERNOW=$(cat $DIR/BAT0/power_now)
+    ENERGYFULL=$(cat $DIR/BAT0/energy_full)
+    ENERGYNOW=$(cat $DIR/BAT0/energy_now)
+    CAPACITY=$(cat $DIR/BAT0/capacity)
 
     # status
     [[ $(get_time_remaining $AC $POWERNOW $ENERGYNOW $ENERGYFULL) ]] \

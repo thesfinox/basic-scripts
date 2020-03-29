@@ -41,11 +41,6 @@ function show_help() {
 # Check if X11 menu is installed
 [[ -x $(which dmenu) ]] || exit 1
 
-# Load or create search history
-HST=$XDG_CACHE_HOME/dsearch/dsearch_hst
-[[ ! -f $HST ]] && (mkdir -p $XDG_CACHE_HOME/dsearch 2> /dev/null \
-                    && touch $HST)
-
 # Check if browser is defined
 [[ $BROWSER ]] && URLOPEN=$BROWSER || URLOPEN=xdg-open
 
@@ -62,6 +57,10 @@ while getopts ":hiyw" opt; do
           exit 1
           ;;
       i)
+          HST=$XDG_CACHE_HOME/dsearch/web_search_history
+          [[ ! -f $HST ]] && (mkdir -p $XDG_CACHE_HOME/dsearch 2> /dev/null \
+                              && touch $HST)
+
           cat $HST| dmenu -i -l 20 -p "Web search: "| \
               tee -a $HST| \
               xargs -r -I{} $URLOPEN --new-window \
@@ -71,6 +70,10 @@ while getopts ":hiyw" opt; do
           exit 0
           ;;
       y)
+          HST=$XDG_CACHE_HOME/dsearch/youtube_search_history
+          [[ ! -f $HST ]] && (mkdir -p $XDG_CACHE_HOME/dsearch 2> /dev/null \
+                              && touch $HST)
+
           cat $HST| dmenu -i -l 20 -p "Youtube search: "| \
               tee -a $HST| \
               xargs -r -I{} $URLOPEN --new-window \
@@ -80,6 +83,10 @@ while getopts ":hiyw" opt; do
           exit 0
           ;;
       w)
+          HST=$XDG_CACHE_HOME/dsearch/wikipedia_search_history
+          [[ ! -f $HST ]] && (mkdir -p $XDG_CACHE_HOME/dsearch 2> /dev/null \
+                              && touch $HST)
+
           cat $HST| dmenu -i -l 20 -p "Wikipedia search: "| \
               tee -a $HST| \
               xargs -r -I{} $URLOPEN --new-window \
