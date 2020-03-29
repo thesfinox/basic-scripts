@@ -33,7 +33,7 @@ function show_help() {
 
   printf "\n%s\n%s\n\n" \
     "For bug report and info: riccardo.finotello@gmail.com" \
-    "Copyright (c) 2019 - Alessandra Cappati and Riccardo Finotello - MIT License"
+    "Copyright (c) 2020 - Riccardo Finotello - MIT License"
 }
 
 # Check if Redsihft is installed
@@ -74,7 +74,11 @@ TEMPERATURE=$(redshift -p 2> /dev/null| awk '/^Colour/ {print $NF}')
 case $BLOCK_BUTTON in
   3)
     pkill -RTMIN+1 i3blocks
-    notify-send "Screen Colour Temperature" "$(redshift -p 2> /dev/null)"
+    notify-send \
+    -a "Screen Temperature" \
+    -i "display-brightness-symbolic.symbolic" \
+    "Screen Colour Temperature" \
+    "$(redshift -p 2> /dev/null)"
     ;;
 esac
 

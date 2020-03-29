@@ -3,7 +3,7 @@
 #
 # Show and share clipboard content.
 #
-# The script shows clipboard content using Parcellite clipboard manager. It uses
+# Show clipboard content using Parcellite clipboard manager. The script uses
 # Python module for QR code creation in order to share the content of the
 # clipboard buffer with external devices and a notification client to
 # display the content on screen.
@@ -86,7 +86,11 @@ function send_notification() {
       ;;
   esac
 
-  notify-send "$TITLE" "$(show_clipboard $ARG)"
+  notify-send \
+  -a "Clipboard" \
+  -i "dialog-information-symbolic.symbolic" \
+  "$TITLE" \
+  "$(show_clipboard $ARG)"
 }
 
 function show_notification() {

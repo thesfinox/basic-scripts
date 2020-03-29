@@ -1,0 +1,219 @@
+#! /usr/bin/env bash
+
+#
+# Mount devices.
+#
+# Mount partitions and Android devices using udisks and simple-mtpfs.
+#
+# Author:     Riccardo Finotello
+# E-mail:     riccardo.finotello@gmail.com
+#
+# Copyright:  2020 - Riccardo Finotello
+# License:    MIT License
+#
+
+# ------------------------------------
+# OPTIONS, HELP, USAGE AND CHECKS
+# ------------------------------------
+
+# Show usage
+function show_usage() {
+    USAGE="$(basename $0) [-h] [-m|-u]"
+    printf "\n%s\n%s\n" "Usage:" "    $USAGE"
+}
+
+# Show help
+function show_help() {
+    show_usage
+
+    printf "\n%s\n\n" "Mount devices"
+    printf "%s\n" "OPTIONS:"
+    printf "%s\n" "    -h         Show this help and exit"
+    printf "%s\n" "    -m         Mount device"
+    printf "%s\n" "    -u         Unmount device"
+
+    printf "\n%s\n%s\n\n" \
+           "For bug report and info: riccardo.finotello@gmail.com" \
+           "Copyright (c) 2020 - Riccardo Finotello - MIT License"
+}
+
+# Check if udisks and simple-mtpfs are installed
+[[ -x $(which udisksctl) ]] || exit 1
+[[ -x $(which simple-mtpfs) ]] || exit 1
+
+# Check if X11 menu is installed
+[[ -x $(which dmenu) ]] || exit 1
+
+# Check if file explorer is installed
+[[ -x $(which ranger) ]] && FILEEXPLORER="$TERMINAL -e ranger"
+
+# Mount block device
+function mount_block_device() {
+    # get mount location
+    LOC=$(lsblk -l -p -o NAME,LABEL,SIZE,TYPE,MOUNTPOINT| \
+          awk '/part $/ && !/nvme/ {$NF=""; print $0}'| \
+          dmenu -i -l 10 -p 'Partition to mount: '| awk '{print $1}'| \
+          xargs -r -I{} udisksctl mount -b {}| \
+          sed -e 's/^.*\/run\(.*\)[.]/\/run\1/g')
+
+    # handle error
+    [[ $? != 0 ]] && notify-send \
+                     -a "DMount" \
+                     -i "dialog-warning-symbolic.symbolic" \
+                     "Cannot Mount Device" \
+                     "Retry or disconnect device "
+
+    # send notification
+    [[ $LOC ]] && notify-send \
+                  -a "DMount" \
+                  -i "folder-visiting-symbolic.symbolic" \
+                  "Volume Mounted" \
+                  "Partition mounted at $LOC."
+
+    # open file explorer
+    ([[ $LOC ]] && [[ $FILEEXPLORER ]]) && $FILEEXPLORER "$LOC"
+}
+
+# Mount Android device
+function mount_android_device() {
+    # get no. of the device
+    NO=$(simple-mtpfs -l| \
+         dmenu -i -l 10 -p 'Android devices: '| \
+         awk -F':' '{print $1}')
+    # prepare directory for mount point
+    [[ $NO ]] && DIR=$HOME/android-phone_$NO
+    [[ $DIR ]] && mkdir -p $DIR 2> /dev/null
+
+    # mount device
+    ([[ $NO ]] && [[ $DIR ]]) && simple-mtpfs --device $NO $DIR
+
+    # handle error
+    [[ $? != 0 ]] && notify-send \
+                     -a "DMount" \
+                     -i "network-cellular-disabled-symbolic.symbolic" \
+                     "Cannot Mount Android device" \
+                     "Unlock or allow access on your phone" \
+                  && exit 1
+
+    # send notification
+    [[ $DIR ]] && notify-send \
+                  -a "DMount" \
+                  -i "network-cellular-connected-symbolic.symbolic" \
+                  "Phone Mounted" \
+                  "Android phone mounted in $DIR."
+
+    # open file explorer
+    ([[ $DIR ]] && [[ $FILEEXPLORER ]]) && $FILEEXPLORER "$DIR"
+}
+
+# Unmount block device
+function unmount_block_device() {
+    # get device
+    DEV=$(lsblk -l -p -o NAME,LABEL,SIZE,TYPE,MOUNTPOINT| \
+          awk '/part [\/aA-zZ].*$/ && !/nvme/'| sed 's/part //g'| \
+          dmenu -i -l 10 -p 'Partition to unmount: '| awk '{print $1}'| \
+          xargs -r -I{} udisksctl unmount -b {})
+
+    # handle error
+    [[ $? != 0 ]] && notify-send \
+                     -a "DMount" \
+                     -i "changes-prevent-symbolic.symbolic" \
+                     "Cannot Release Volume" \
+                     "Target is busy or cannot be unmounted" \
+                  && exit 1
+
+    # send notification
+    [[ $DEV ]] && notify-send \
+                  -a "DMount" \
+                  -i "changes-allow-symbolic.symboli" \
+                  "Volume Unmounted" \
+                  "Unmounted $DEV"
+}
+
+# Umount Android device
+function unmount_android_device() {
+    # get no. of the device
+    NO=$(simple-mtpfs -l| \
+         dmenu -i -l 10 -p 'Android devices: '| \
+         awk -F':' '{print $1}')
+
+    # get directory name
+    [[ $NO ]] && DIR=$HOME/android-phone_$NO
+
+    # unmount device and remove the directory
+    [[ $DIR ]] && (fusermount -u $DIR && rm -rf $DIR)
+
+    # send notification
+    [[ ! $DIR ]] && notify-send \
+                    -a "DMount" \
+                    -i "network-cellular-connected-symbolic.symbolic" \
+                    "Phone Unmounted" \
+                    "Android phone has been unmounted"
+}
+
+# Parse options
+while getopts ":hmu" opt; do
+    case $opt in
+      h)
+          show_help
+          exit 0
+          ;;
+      m)
+          CHOICE=$(echo -e "Storage device\nAndroid phone" | \
+                   dmenu -i -p 'Choose type to mount: ')
+
+          case $CHOICE in
+              "Storage device")
+                  mount_block_device
+                  exit 0
+                  ;;
+              "Android phone")
+                  mount_android_device
+                  exit 0
+                  ;;
+              *)
+                  printf "%s\n" "Wrong device type!"
+                  exit 1
+                  ;;
+          esac
+          exit 0
+          ;;
+      u)
+          CHOICE=$(echo -e "Storage device\nAndroid phone" | \
+                   dmenu -i -p 'Choose type to unmount: ')
+
+          case $CHOICE in
+              "Storage device")
+                  unmount_block_device
+                  exit 0
+                  ;;
+              "Android phone")
+                  unmount_android_device
+                  exit 0
+                  ;;
+              *)
+                  printf "%s\n" "Wrong device type!"
+                  exit 1
+                  ;;
+          esac
+          exit 0
+          ;;
+      \?)
+          printf "%s\n" "Invalid option: -$OPTARG." >&2
+          show_usage
+          exit 1
+          ;;
+      :)
+          printf "%s\n" "-$OPTARG requires an argument." >&2
+          show_usage
+          exit 1
+          ;;
+    esac
+done
+
+# ------------------------------------
+# COMMANDS AND INFO
+# ------------------------------------
+[[ -z $* ]] && (show_help && exit 1)
+
+# vim: ft=sh

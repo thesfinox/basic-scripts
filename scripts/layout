@@ -53,8 +53,11 @@ function clickable_widget() {
       ;;
     3)
       notify-send \
-          "Input Layout" \
-          "Current: $(xkblayout-state print %n)\nAvailable: $(xkblayout-state print %N| xargs)"
+      -a "Keyboard Layout" \
+      -i "keyboard-brightness-symbolic.symbolic" \
+      "Input Layout" \
+      "Current: $(xkblayout-state print %n)\nAvailable: $(xkblayout-state print %N| xargs)"
+
       pkill -RTMIN+1 i3blocks
       ;;
   esac

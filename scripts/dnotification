@@ -109,10 +109,12 @@ while getopts ":hsStrmb" opt; do
           case $BLOCK_BUTTON in
               1)
                   toggle_notifications
+
                   pkill -RTMIN+1 i3blocks
-                  exit 0
                   ;;
           esac
+
+          exit 0
           ;;
       \?)
           printf "%s\n" "Invalid option: -$OPTARG." >&2

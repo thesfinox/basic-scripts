@@ -129,22 +129,22 @@ function get_weather_verbose() {
     printf "%s %s, %s:\n\n" \
         "Weather in " $CITYNAME $COUNTRYCODE
 
-    printf "    Condition:            $(print_icon $WEATHERID) (%s)\n" \
+    printf "Condition: $(print_icon $WEATHERID) (%s)\n" \
         "$WEATHERDESC"
 
-    printf "    Temperature:          %d°C (feels like: %d°C)\n" \
+    printf "Temperature: %d°C (feels like %d°C)\n" \
         $(( ${REALTEMP%%.*} - 273 )) $(( ${PERCTEMP%%.*} - 273 ))
 
-    printf "    Temperature forecast: MIN --> %d°C, MAX --> %d°C\n" \
+    printf "Temperature forecast: MIN %d°C, MAX %d°C\n" \
         $(( ${MINTEMP%%.*} - 273 )) $(( ${MAXTEMP%%.*} - 273 ))
 
-    printf "    Humidity:             %d%%\n" \
+    printf "Humidity: %d%%\n" \
         ${HUMIDITY%%.*}
 
-    printf "    Pressure:             %d hPa\n" \
+    printf "Pressure: %d hPa\n" \
         ${PRESSURE%%.*}
 
-    printf "    Wind:                 %.1f m/s (direction: %d°)\n" \
+    printf "Wind: %.1f m/s (direction %d°)\n" \
         $WINDSPEED ${WINDDIR%%.*}
 }
 
@@ -168,11 +168,16 @@ while getopts ":hvsb" opt; do
 
           case $BLOCK_BUTTON in
               3)
-                  notify-send "Weather Information" "$(get_weather_verbose)"
+                  notify-send \
+                  -a "Weather Information" \
+                  -i "weather-clear-night-symbolic.symbolic" \
+                  "Weather Information" \
+                  "$(get_weather_verbose)"
+
                   pkill -RTMIN+1 i3blocks
-                  exit 0
                   ;;
           esac
+
           exit 0
           ;;
       \?)

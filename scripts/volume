@@ -1,14 +1,14 @@
 #! /usr/bin/env bash
 
 #
-# Get volume levels.
+# Display and manage audio volume.
 #
-# Get volume levels of the internal ALSA device.
+# Use amixer to display and manage volume in a very simple way.
 #
 # Author:     Riccardo Finotello
 # E-mail:     riccardo.finotello@gmail.com
 #
-# Copyright:  2019 - Riccardo Finotello and Alessandra Cappati
+# Copyright:  2020 - Riccardo Finotello
 # License:    MIT License
 #
 
@@ -18,210 +18,136 @@
 
 # Show usage
 function show_usage() {
-  USAGE="$(basename $0) [-h] [-g DEV] [-G] [-t DEV] [-i|-d]"
-  printf "\n%s\n%s\n" "Usage:" "    $USAGE"
+    USAGE="$(basename $0) [-h] [-t|-T] [-O|-o] [-M|-m] [-s]"
+    printf "\n%s\n%s\n" "Usage:" "    $USAGE"
 }
 
 # Show help
 function show_help() {
-  show_usage
+    show_usage
 
-  printf "\n%s\n\n" "Get volume levels."
-  printf "%s\n" "OPTIONS:"
-  printf "%s\n" "    -h             Show this help and exit"
-  printf "%s\n" "    -g DEV         Get volume of the DEV"
-  printf "%s\n" "    -G             Get volume of I/O devices"
-  printf "%s\n" "    -t DEV         Toggle DEV"
-  printf "%s\n" "    -i DEV         Increase volume of DEV"
-  printf "%s\n" "    -d DEV         Decrease volume of DEV"
-  printf "\n%s\n" "DEV:"
-  printf "%s\n" "     i or input    Input device"
-  printf "%s\n" "     o or output   Output device"
+    printf "\n%s\n\n" "Display and manage audio volume."
+    printf "%s\n" "OPTIONS:"
+    printf "%s\n" "    -h         Show this help and exit"
+    printf "%s\n" "    -t         Toggle output"
+    printf "%s\n" "    -T         Toggle input"
+    printf "%s\n" "    -O QTY     Increase output volume by QTY"
+    printf "%s\n" "    -o QTY     Decrease output volume by QTY"
+    printf "%s\n" "    -M QTY     Increase input volume by QTY"
+    printf "%s\n" "    -m QTY     Decrease input volume by QTY"
+    printf "%s\n" "    -s         Show current status"
+    printf "%s\n" "    -S         Show current status (i3blocks style)"
 
-  printf "\n%s\n%s\n\n" \
-    "For bug report and info: riccardo.finotello@gmail.com" \
-    "Copyright (c) 2019 - Riccardo Finotello and Alessandra Cappati - MIT License"
+    printf "\n%s\n%s\n\n" \
+           "For bug report and info: riccardo.finotello@gmail.com" \
+           "Copyright (c) 2020 - Riccardo Finotello - MIT License"
 }
 
-# ALSA utility
-ALSA=$(which amixer)
+# Check if amixer is installed
+[[ -x $(which amixer) ]] || exit 1
 
-# Get mute/unmute
-function get_state() {
-  if [[ -n $($ALSA -c 0 -- sget $1 | grep -w off) ]] || \
-    [[ -n $($ALSA -c 0 -- sget $1 | grep -w 0%) ]]; then
-    STATE=0
-  else
-    STATE=1
-  fi
+# Show status
+function show_status() {
+    FRONTLEFT=$(amixer sget $1,0| awk '/Front Left:/ {print $5}'| tr -d '[%]')
+    FRONTRIGHT=$(amixer sget $1,0| awk '/Front Right:/ {print $5}'| tr -d '[%]')
 
-  echo $STATE
-}
-
-# Toggle mute/unmute
-function toggle_state() {
-  case $1 in
-    o|output)
-      $ALSA -c 0 -D pulse -- sset Master toggle &> /dev/null
-      ;;
-    i|input)
-      $ALSA -c 0 -D pulse -- sset Capture toggle &> /dev/null
-      ;;
-    *)
-      printf "%s\n" "Wrong device: $1 is not a good device." >&2
-      exit 1
-      ;;
-  esac
-}
-
-# Get volume
-function get_volume() {
-  case $1 in
-    o|output)
-      if [[ $(get_state Master) -eq 1 ]]; then
-        VOLUME=$($ALSA -c 0 -D pulse -- sget Master | \
-          awk '/Front Left/ {gsub("[%]",""); print $5}' | tr -d '[]\-\n')
-        if [[ $VOLUME -gt 70 ]]; then
-          echo -e "\ufa7d $VOLUME%"
-        elif [[ $VOLUME -gt 35 ]]; then
-          echo -e "\ufa7f $VOLUME%"
-        else
-          echo -e "\ufa7e $VOLUME%"
-        fi
-      else
-        echo -e "\ufc5d"
-      fi
-      ;;
-    i|input)
-      if [[ $(get_state Capture) -eq 1 ]]; then
-        VOLUME=$($ALSA -c 0 -D pulse -- sget Capture | \
-          awk '/Front Left/ {gsub("[%]",""); print $5}' | tr -d '[]\-\n')
-        if [[ $VOLUME -gt 0 ]]; then
-          echo -e "\uf130 $VOLUME%"
-        fi
-      else
-        echo -e "\uf131"
-      fi
-      ;;
-    *)
-      printf "%s\n" "Wrong device: $1 is not a good device." >&2
-      exit 1
-      ;;
-  esac
-}
-
-# Increase/Decrease volume
-function increase_volume() {
-  case $1 in
-    o|output)
-      if [[ $(get_state Master) -eq 0 ]]; then
-        toggle_state output
-      fi
-      $ALSA -c 0 -D pulse -- sset Master 5%+ &> /dev/null
-      ;;
-    i|input)
-      if [[ $(get_state Capture) -eq 0 ]]; then
-        toggle_state input
-      fi
-      $ALSA -c 0 -D pulse -- sset Capture 5%+ &> /dev/null
-      ;;
-    *)
-      printf "%s\n" "Wrong device: $1 is not a good device." >&2
-      exit 1
-      ;;
-  esac
-}
-
-function decrease_volume() {
-  case $1 in
-    o|output)
-      if [[ $(get_state Master) -eq 0 ]]; then
-        toggle_state output
-      fi
-      $ALSA -c 0 -D pulse -- sset Master 5%- &> /dev/null
-      ;;
-    i|input)
-      if [[ $(get_state Capture) -eq 0 ]]; then
-        toggle_state input
-      fi
-      $ALSA -c 0 -D pulse -- sset Capture 5%- &> /dev/null
-      ;;
-    *)
-      printf "%s\n" "Wrong device: $1 is not a good device." >&2
-      exit 1
-      ;;
-  esac
-}
-
-# i3bar clickable widget
-function clickable_widget() {
-  case $BLOCK_BUTTON in
-    1)
-      /usr/bin/pkill -RTMIN+1 i3blocks
-      if [[ -x $(which alsamixer) && -x $(which st) ]]; then
-        $(which st) -e $(which alsamixer)
-      fi
-      ;;
-    2)
-      /usr/bin/pkill -RTMIN+1 i3blocks
-      ;;
-    3)
-      /usr/bin/pkill -RTMIN+1 i3blocks
-      if [[ -x $(which notify-send) ]]; then
-        $(which notify-send) -a "Volume control" "Volume info" \
-          "$($ALSA -c 0 -- sget Master)\n$($ALSA -c 0 -- sget Capture)"
-      fi
-      ;;
-  esac
+    echo $(( ( $FRONTLEFT + $FRONTRIGHT ) / 2 ))
 }
 
 # Parse options
-while getopts ":hg:Gt:i:d:" opt; do
-  case $opt in
-    h)
-      show_help
-      exit 0
-      ;;
-    g)
-      get_volume $OPTARG
-      exit 0
-      ;;
-    G)
-      echo $(get_volume input) $(get_volume output)
-      clickable_widget
-      exit 0
-      ;;
-    t)
-      toggle_state $OPTARG
-      exit 0
-      ;;
-    i)
-      increase_volume $OPTARG
-      exit 0
-      ;;
-    d)
-      decrease_volume $OPTARG
-      exit 0
-      ;;
-    \?)
-      printf "%s\n" "Invalid option: -$OPTARG." >&2
-      show_usage
-      exit 1
-      ;;
-    :)
-      printf "%s\n" "-$OPTARG requires an argument." >&2
-      show_usage
-      exit 1
-      ;;
-  esac
+while getopts ":htTO:o:M:m:sS" opt; do
+    case $opt in
+      h)
+          show_help
+          exit 0
+          ;;
+      t)
+          amixer sset Master,0 toggle
+          exit 0
+          ;;
+      T)
+          amixer sset Capture,0 toggle
+          exit 0
+          ;;
+      O)
+          amixer sset Master,0 $OPTARG%+
+          exit 0
+          ;;
+      o)
+          amixer sset Master,0 $OPTARG%-
+          exit 0
+          ;;
+      M)
+          amixer sset Capture,0 $OPTARG%+
+          exit 0
+          ;;
+      m)
+          amixer sset Capture,0 $OPTARG%-
+          exit 0
+          ;;
+      s)
+          INPUTSTATUS=$(amixer sget Master,0| grep -E '\<on\>')
+          OUTPUTSTATUS=$(amixer sget Capture,0| grep -E '\<on\>')
+
+          ([[ $INPUTSTATUS ]] && [[ $OUTPUTSTATUS ]]) \
+              && echo -e "\ufa7d $(show_status Master)% \uf130 $(show_status Capture)%"
+          ([[ $INPUTSTATUS ]] && [[ ! $OUTPUTSTATUS ]]) \
+              && echo -e "\ufa7d $(show_status Master)% \uf131"
+          ([[ ! $INPUTSTATUS ]] && [[ $OUTPUTSTATUS ]]) \
+              && echo -e "\ufa80 \uf130 $(show_status Capture)%"
+          ([[ ! $INPUTSTATUS ]] && [[ ! $OUTPUTSTATUS ]]) \
+              && echo -e "\ufa80 \uf131"
+
+          exit 0
+          ;;
+      S)
+          INPUTSTATUS=$(amixer sget Master,0| grep -E '\<on\>')
+          OUTPUTSTATUS=$(amixer sget Capture,0| grep -E '\<on\>')
+
+          ([[ $INPUTSTATUS ]] && [[ $OUTPUTSTATUS ]]) \
+              && echo -e "\ufa7d $(show_status Master)% \uf130 $(show_status Capture)%"
+          ([[ $INPUTSTATUS ]] && [[ ! $OUTPUTSTATUS ]]) \
+              && echo -e "\ufa7d $(show_status Master)% \uf131"
+          ([[ ! $INPUTSTATUS ]] && [[ $OUTPUTSTATUS ]]) \
+              && echo -e "\ufa80 \uf130 $(show_status Capture)%"
+          ([[ ! $INPUTSTATUS ]] && [[ ! $OUTPUTSTATUS ]]) \
+              && echo -e "\ufa80 \uf131"
+
+          case $BLOCK_BUTTON in
+              1)
+                  [[ -x $(which alsamixer) ]] && $TERMINAL -e alsamixer
+                  pkill -RTMIN+1 i3blocks
+                  ;;
+              3)
+                  notify-send \
+                  -a "Audio" \
+                  -i "audio-volume-high-symbolic.symbolic" \
+                  "Audio Information" \
+                  "$(amixer sget Master| column -t -s':' -R 2)"
+
+                  pkill -RTMIN+1 i3blocks
+                  ;;
+          esac
+
+          exit 0
+          ;;
+      \?)
+          printf "%s\n" "Invalid option: -$OPTARG." >&2
+          show_usage
+          exit 1
+          ;;
+      :)
+          printf "%s\n" "-$OPTARG requires an argument." >&2
+          show_usage
+          exit 1
+          ;;
+    esac
 done
+# f-args: -s
 
 # ------------------------------------
 # COMMANDS AND INFO
 # ------------------------------------
+[[ -z $* ]] && (show_help && exit 1)
 
-if [[ -z $1 ]]; then
-  show_help
-  exit 1
-fi
-
+# vim: ft=sh

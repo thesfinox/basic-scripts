@@ -1,16 +1,14 @@
 #! /usr/bin/env bash
 
 #
-# Read battery info.
+# Display battery status.
 #
-# This script reads battery information and displays it in the shortest possible
-# form. It uses ACPI to get battery info and displays notifications in case
-# the level drops below 10%.
+# Display battery capacity and charging status.
 #
 # Author:     Riccardo Finotello
 # E-mail:     riccardo.finotello@gmail.com
 #
-# Copyright:  2019 - Alessandra Cappati and Riccardo Finotello
+# Copyright:  2020 - Riccardo Finotello
 # License:    MIT License
 #
 
@@ -20,149 +18,168 @@
 
 # Show usage
 function show_usage() {
-  USAGE="$(basename $0) [-h]"
-  printf "\n%s\n%s\n" "Usage:" "    $USAGE"
+    USAGE="$(basename $0) [-h] [-v|-s] [-b]"
+    printf "\n%s\n%s\n" "Usage:" "    $USAGE"
 }
 
 # Show help
 function show_help() {
-  show_usage
+    show_usage
 
-  printf "\n%s\n\n" "Read battery info."
-  printf "%s\n" "OPTIONS:"
-  printf "%s\n" "    -h         Show this help and exit"
+    printf "\n%s\n\n" "Display battery status."
+    printf "%s\n" "OPTIONS:"
+    printf "%s\n" "    -h         Show this help and exit"
+    printf "%s\n" "    -v         Show verbose version"
+    printf "%s\n" "    -s         Show short version"
+    printf "%s\n" "    -b         Show i3blocks version"
 
-  printf "\n%s\n%s\n\n" \
-    "For bug report and info: riccardo.finotello@gmail.com" \
-    "Copyright (c) 2019 - Alessandra Cappati and Riccardo Finotello - MIT License"
+    printf "\n%s\n%s\n\n" \
+           "For bug report and info: riccardo.finotello@gmail.com" \
+           "Copyright (c) 2020 - Riccardo Finotello - MIT License"
+}
+
+# Status
+function get_status() {
+    AC=$1
+    POWERNOW=$2
+    CAPACITY=$3
+
+    case $AC in
+        1)
+            [[ $POWERNOW -gt 0 ]] \
+                && ([[ $CAPACITY -ge 95 ]] && echo "charged" || echo "charging") \
+                || ([[ $CAPACITY -ge 95 ]] && echo "charged" || echo "unknown")
+            ;;
+        0)
+            [[ $POWERNOW -gt 0 ]] && echo "discharging" || echo "unknown"
+            ;;
+        *)
+            printf "%s\n" "Invalid value!" >&2
+            exit 1
+            ;;
+    esac
+}
+
+function get_status_icon() {
+    AC=$1
+    POWERNOW=$2
+    CAPACITY=$3
+
+    case $AC in
+        1)
+            [[ $POWERNOW -gt 0 ]] \
+                && ([[ $CAPACITY -ge 95 ]] && echo "\uf240" || echo "\uf583") \
+                || ([[ $CAPACITY -ge 95 ]] && echo "\uf492" || echo "\uf128")
+            ;;
+        0)
+            [[ $POWERNOW -gt 0 ]] && echo "\uf103" || echo "\uf590"
+            ;;
+        *)
+            printf "%s\n" "Invalid value!" >&2
+            exit 1
+            ;;
+    esac
+}
+
+# Get time remaining
+function get_time_remaining() {
+    AC=$1
+    POWERNOW=$2
+    ENERGYNOW=$3
+    ENERGYFULL=$4
+
+    ([[ $AC -gt 0 ]] && [[ $POWERNOW -gt 0 ]]) \
+        && TIME=$(( 60 * ($ENERGYFULL - $ENERGYNOW) / $POWERNOW ))
+    ([[ $AC == 0 ]] && [[ $POWERNOW -gt 0 ]]) \
+        && TIME=$(( 60 * $ENERGYNOW / $POWERNOW ))
+
+    [[ $TIME ]] && HOURS=$(( $TIME / 60 ))
+    [[ $HOURS ]] && printf "%d h %d min\n" "$HOURS" "$(( $TIME - 60 * $HOURS ))"
+}
+
+# Verbose version
+function get_verbose() {
+    AC=$(cat /sys/class/power_supply/AC/online)
+    POWERNOW=$(cat /sys/class/power_supply/BAT0/power_now)
+    ENERGYFULL=$(cat /sys/class/power_supply/BAT0/energy_full)
+    ENERGYNOW=$(cat /sys/class/power_supply/BAT0/energy_now)
+    CAPACITY=$(cat /sys/class/power_supply/BAT0/capacity)
+
+    # AC adapter
+    [[ $AC -gt 0 ]] && echo "AC adapter: online" || echo "AC adapter: offline"
+
+    # status
+    echo -e "Status: $(get_status $AC $POWERNOW $CAPACITY)"
+
+    # capacity
+    echo "Capacity: $CAPACITY%"
+
+    # time remaining
+    [[ $AC == 0 ]] \
+        && echo "Time remaining: $(get_time_remaining $AC $POWERNOW $ENERGYNOW $ENERGYFULL)" \
+        || echo "Time to recharge: $(get_time_remaining $AC $POWERNOW $ENERGYNOW $ENERGYFULL)" 
+}
+
+# Get short version
+function get_short() {
+    AC=$(cat /sys/class/power_supply/AC/online)
+    POWERNOW=$(cat /sys/class/power_supply/BAT0/power_now)
+    ENERGYFULL=$(cat /sys/class/power_supply/BAT0/energy_full)
+    ENERGYNOW=$(cat /sys/class/power_supply/BAT0/energy_now)
+    CAPACITY=$(cat /sys/class/power_supply/BAT0/capacity)
+
+    # status
+    echo -e "$CAPACITY% $(get_status_icon $AC $POWERNOW $CAPACITY)  ($(get_time_remaining $AC $POWERNOW $ENERGYNOW $ENERGYFULL))"
 }
 
 # Parse options
-while getopts ":h" opt; do
-  case $opt in
-    h)
-      show_help
-      exit 0
-      ;;
-    \?)
-      printf "%s\n" "Invalid option: -$OPTARG." >&2
-      show_usage
-      exit 1
-      ;;
-    :)
-      printf "%s\n" "-$OPTARG requires an argument." >&2
-      show_usage
-      exit 1
-      ;;
-  esac
+while getopts ":hvsb" opt; do
+    case $opt in
+      h)
+          show_help
+          exit 0
+          ;;
+      s)
+          get_short
+          exit 0
+          ;;
+      v)
+          get_verbose
+          exit 0
+          ;;
+      b)
+          get_short
+
+          case $BLOCK_BUTTON in
+              3)
+                  notify-send \
+                  -a "Battery Information" \
+                  -i "battery-missing-symbolic.symbolic" \
+                  "Battery" \
+                  "$(get_verbose| column -t -s':' -R 2)"
+
+                  pkill -RTMIN+1 i3blocks
+                  ;;
+          esac
+
+          exit 0
+          ;;
+      \?)
+          printf "%s\n" "Invalid option: -$OPTARG." >&2
+          show_usage
+          exit 1
+          ;;
+      :)
+          printf "%s\n" "-$OPTARG requires an argument." >&2
+          show_usage
+          exit 1
+          ;;
+    esac
 done
 
 # ------------------------------------
 # COMMANDS AND INFO
 # ------------------------------------
+[[ -z $* ]] && (show_help && exit 1)
 
-# Check the presence of UPOWER
-if [[ ! -z $(which acpi) ]]; then
-  INFO=$(which acpi)
-else
-  printf "%s\n%s\n%s\n" \
-    "acpi is not in the PATH." \
-    "You might have to add it. E.g.: sudo pacman -Syu acpi." \
-    "acpi is a critical component: the script will not work without it." >&2
-  exit 1
-fi
-
-# Check if the notification client is installed
-if [[ ! -z $(which notify-send) ]]; then
-  NOTIFICATIONS=$(which notify-send)
-else
-  printf "%s\n%s\n%s\n" \
-    "The notification client is not in the PATH." \
-    "You might have to add it. E.g.: sudo apt install ruby-notify." \
-    "Some of the functionalities might be compromised." >&2
-fi
-
-# Read battery info
-BATTERY="Battery 0"
-BATTERYSTATUS=$($INFO -b | grep "$BATTERY" | awk -F ': ' '{print $2}' | tr -d ',')
-
-STATUS=$(echo $BATTERYSTATUS | awk '{print $1}')
-PERCENTAGE=$(echo $BATTERYSTATUS | awk '{gsub("%",""); print $2}')
-TIME=$(echo $BATTERYSTATUS | awk '{print $3}')
-
-if [[ $PERCENTAGE -ge 95 ]]; then
-  case $STATUS in
-    Discharging)
-      ICON="\uf118 \uf240"
-      ;;
-    *)
-      ICON="\uf118 \uf492"
-      ;;
-  esac
-elif [[ $PERCENTAGE -ge 85 ]]; then
-  case $STATUS in
-    Discharging)
-      ICON="\uf103 \uf240"
-      ;;
-    *)
-      ICON="\uf102 \uf240"
-      ;;
-  esac
-elif [[ $PERCENTAGE -ge 40 ]]; then
-  case $STATUS in
-    Discharging)
-      ICON="\uf103 \uf242"
-      ;;
-    *)
-      ICON="\uf102 \uf242"
-      ;;
-  esac
-elif [[ $PERCENTAGE -ge 25 ]]; then
-  case $STATUS in
-    Discharging)
-      ICON="\uf103 \uf244"
-      ;;
-    *)
-      ICON="\uf102 \uf244"
-      ;;
-  esac
-elif [[ $PERCENTAGE -ge 10 ]]; then
-  case $STATUS in
-    Discharging)
-      ICON="\uf103 \uf60b"
-      ;;
-    *)
-      ICON="\uf102 \uf60b"
-      ;;
-  esac
-else
-  case $STATUS in
-    Discharging)
-      ICON="\uf103 CAUTION!"
-      ;;
-    *)
-      ICON="\uf102 CAUTION!"
-      ;;
-  esac
-fi
-
-echo -e "$PERCENTAGE% $ICON"
-
-case $BLOCK_BUTTON in
-  1)
-    /usr/bin/pkill -RTMIN+1 i3blocks
-    ;;
-  2)
-    /usr/bin/pkill -RTMIN+1 i3blocks
-    ;;
-  3)
-    /usr/bin/pkill -RTMIN+1 i3blocks
-    if [[ $TIME ]]; then
-      $NOTIFICATIONS -a "Battery" "Battery info" "Status: $STATUS\nCapacity: $PERCENTAGE%\nTime remaining: $TIME"
-    else
-      $NOTIFICATIONS -a "Battery" "Battery info" "Status: $STATUS\nCapacity: $PERCENTAGE%"
-    fi
-    ;;
-esac
-
-exit 0
+# vim: ft=sh
