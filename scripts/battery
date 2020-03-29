@@ -129,7 +129,9 @@ function get_short() {
     CAPACITY=$(cat /sys/class/power_supply/BAT0/capacity)
 
     # status
-    echo -e "$CAPACITY% $(get_status_icon $AC $POWERNOW $CAPACITY)  ($(get_time_remaining $AC $POWERNOW $ENERGYNOW $ENERGYFULL))"
+    [[ $(get_time_remaining $AC $POWERNOW $ENERGYNOW $ENERGYFULL) ]] \
+        && echo -e "$CAPACITY% $(get_status_icon $AC $POWERNOW $CAPACITY) ($(get_time_remaining $AC $POWERNOW $ENERGYNOW $ENERGYFULL))" \
+        || echo -e "$CAPACITY% $(get_status_icon $AC $POWERNOW $CAPACITY)"
 }
 
 # Parse options
