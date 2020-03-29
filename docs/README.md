@@ -16,10 +16,10 @@ The scripts are based on personal experience and might not fit the exact needs o
 
 ## Description of the Tools
 
-* [attachtmux](tools/attachtmux.md)
-* [battery](tools/battery.md)
-* [dbookmarks](tools/dbookmarks.md)
-* [clipboard](tools/clipboard.md)
+* attachtmux
+* battery
+* dbookmarks
+* clipboard
 * connectivity
 * help
 * layout
