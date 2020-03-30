@@ -60,7 +60,7 @@ while getopts ":hciot:" opt; do
       c)
           WIFI=$(nmcli device show wlp3s0| \
                  awk -F':' '/^GENERAL[.]CONNECTION/ {print $2}'| sed 's/^ *//g')
-          STATE=$(nmcli device wifi| awk '/^[*]/ {print $8}')
+          STATE=$(nmcli -f IN-USE,SIGNAL device wifi| awk '/^[*]/ {print $NF}')
 
           ETH=$(nmcli device show enp0s31f6| \
                 awk -F':' '/^GENERAL[.]CONNECTION/ {print $2}'| sed 's/^ *//g')
