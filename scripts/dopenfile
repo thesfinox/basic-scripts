@@ -67,7 +67,7 @@ find $HOME -maxdepth 1 -mindepth 1 -not -path "*/[@.]*" -type d| sort| \
     dmenu -i -l 20| \
     xargs -r -I{} find {} -not -path "*/[@.]*" -type f| sort| \
     dmenu -i -l 20| \
-    xargs -r xdg-open
+    xargs -r -I{} xdg-open "{}"
 
 exit 0
 
