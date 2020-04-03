@@ -59,6 +59,9 @@ ID=${CITYID:-3165523}
 URL=https://api.openweathermap.org/data/2.5/weather
 
 # Curl information
+CODE=$(curl -w "%{http_code}" -o /dev/null -Ss "$URL/?id=$ID&appid=$API" 2> /dev/null)
+[[ $CODE == '200' ]] || exit 1
+
 RESPONSE=$(curl -Ss "$URL/?id=$ID&appid=$API")
 
 # Print icon
