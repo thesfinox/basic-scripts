@@ -61,12 +61,12 @@ while getopts ":hiyw" opt; do
           [[ ! -f $HST ]] && (mkdir -p $XDG_CACHE_HOME/dsearch 2> /dev/null \
                               && touch $HST)
 
-          cat $HST| dmenu -i -l 20 -p "Web search: "| \
+          tac $HST| dmenu -i -l 20 -p "Web search: "| \
               tee -a $HST| \
               xargs -r -I{} $URLOPEN --new-window \
               "https://duckduckgo.com/?q={}"
 
-          TMP=$(uniq -i $HST) && [[ $TMP ]] && echo $TMP > $HST
+          TMP=$(uniq -i $HST) && [[ $TMP ]] && echo -e "$TMP" > $HST
           exit 0
           ;;
       y)
@@ -74,12 +74,12 @@ while getopts ":hiyw" opt; do
           [[ ! -f $HST ]] && (mkdir -p $XDG_CACHE_HOME/dsearch 2> /dev/null \
                               && touch $HST)
 
-          cat $HST| dmenu -i -l 20 -p "Youtube search: "| \
+          tac $HST| dmenu -i -l 20 -p "Youtube search: "| \
               tee -a $HST| \
               xargs -r -I{} $URLOPEN --new-window \
               "https://www.youtube.com/results?search_query={}"
 
-          TMP=$(uniq -i $HST) && [[ $TMP ]] && echo $TMP > $HST
+          TMP=$(uniq -i $HST) && [[ $TMP ]] && echo -e "$TMP" > $HST
           exit 0
           ;;
       w)
@@ -87,12 +87,12 @@ while getopts ":hiyw" opt; do
           [[ ! -f $HST ]] && (mkdir -p $XDG_CACHE_HOME/dsearch 2> /dev/null \
                               && touch $HST)
 
-          cat $HST| dmenu -i -l 20 -p "Wikipedia search: "| \
+          tac $HST| dmenu -i -l 20 -p "Wikipedia search: "| \
               tee -a $HST| \
               xargs -r -I{} $URLOPEN --new-window \
               "https://wikipedia.org/w/index.php?search={}"
 
-          TMP=$(uniq -i $HST) && [[ $TMP ]] && echo $TMP > $HST
+          TMP=$(uniq -i $HST) && [[ $TMP ]] && echo -e "$TMP" > $HST
           exit 0
           ;;
       :)

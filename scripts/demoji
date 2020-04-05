@@ -71,7 +71,7 @@ done
 # ------------------------------------
 CHOICE=$(column -t -s';' -c 20 $LIST| \
          sed 's/^\s//g' | \
-         dmenu -l 20 -p "Emoji: " -fn 'emoji'| \
+         dmenu -i -l 20 -p "Emoji: " -fn 'emoji'| \
          sed 's/\s.*//g' | \
          tr -d '\n'
         )
