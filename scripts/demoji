@@ -1,0 +1,87 @@
+#! /usr/bin/env bash
+
+#
+# Print emojis.
+#
+# Select and print emojis.
+#
+# Author:     Riccardo Finotello
+# E-mail:     riccardo.finotello@gmail.com
+#
+# Copyright:  2020 - Riccardo Finotello
+# License:    MIT License
+#
+
+# ------------------------------------
+# OPTIONS, HELP, USAGE AND CHECKS
+# ------------------------------------
+
+# Show usage
+function show_usage() {
+    USAGE="$(basename $0) [-h]"
+    printf "\n%s\n%s\n" "Usage:" "    $USAGE"
+}
+
+# Show help
+function show_help() {
+    show_usage
+
+    printf "\n%s\n\n" "Print emojis."
+    printf "%s\n" "OPTIONS:"
+    printf "%s\n" "    -h         Show this help and exit"
+
+    printf "\n%s\n%s\n\n" \
+           "For bug report and info: riccardo.finotello@gmail.com" \
+           "Copyright (c) 2020 - Riccardo Finotello - MIT License"
+}
+
+# Check if X11 menu is installed
+[[ -x $(which dmenu) ]] || exit 1
+
+# Check if xclip is installed
+[[ -x $(which xclip) ]] || exit 1
+
+# Check if the list of emojis is present
+[[ -f $XDG_DATA_HOME/demoji/emoji.dat ]] \
+    && LIST=$XDG_DATA_HOME/demoji/emoji.dat \
+    || exit 1
+
+# Parse options
+while getopts ":h" opt; do
+    case $opt in
+      h)
+          show_help
+          exit 0
+          ;;
+      \?)
+          printf "%s\n" "Invalid option: -$OPTARG." >&2
+          show_usage
+          exit 1
+          ;;
+      :)
+          printf "%s\n" "-$OPTARG requires an argument." >&2
+          show_usage
+          exit 1
+          ;;
+    esac
+done
+
+# ------------------------------------
+# COMMANDS AND INFO
+# ------------------------------------
+CHOICE=$(column -t -s';' -c 20 $LIST| \
+         sed 's/^\s//g' | \
+         dmenu -l 20 -p "Emoji: " -fn 'emoji'| \
+         sed 's/\s.*//g' | \
+         tr -d '\n'
+        )
+
+[[ $CHOICE ]] && (printf $CHOICE| \
+                  xclip -i -selection clipboard \
+                  && notify-send -a "Emoji" \
+                                 -i "dialog-information-symbolic.symbolic" \
+                                 "Emoji copied" "Emoji copied to clipboard")
+
+exit 0
+
+# vim: ft=sh
