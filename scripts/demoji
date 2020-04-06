@@ -80,7 +80,8 @@ CHOICE=$(column -t -s';' -c 20 $LIST| \
                   xclip -i -selection clipboard \
                   && notify-send -a "Emoji" \
                                  -i "dialog-information-symbolic.symbolic" \
-                                 "Emoji copied" "Emoji copied to clipboard")
+                                 "Emoji copied" \
+                                 "$CHOICE copied to clipboard")
 
 exit 0
 
