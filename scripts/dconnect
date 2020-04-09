@@ -32,7 +32,7 @@ function show_help() {
     printf "%s\n" "    -c         Show current connected interface"
     printf "%s\n" "    -i         Show current internal IP address"
     printf "%s\n" "    -o         Show current external IP address"
-    printf "%s\n" "    -t         Toggle WiFi"
+    printf "%s\n" "    -t DEVICE  Toggle DEVICE"
     printf "\n\n%s\n" "DEVICE:"
     printf "%s\n" "    b or bluetooth"
     printf "%s\n" "    w or wifi"
