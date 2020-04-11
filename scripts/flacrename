@@ -1,0 +1,74 @@
+#! /usr/bin/env bash
+
+#
+# Rename FLAC files based on their tags.
+#
+# Use FLAC tags to choose a name for the files.
+#
+# Author:     Riccardo Finotello
+# E-mail:     riccardo.finotello@gmail.com
+#
+# Copyright:  2020 - Riccardo Finotello
+# License:    MIT License
+#
+
+# ------------------------------------
+# OPTIONS, HELP, USAGE AND CHECKS
+# ------------------------------------
+
+# Show usage
+function show_usage() {
+    USAGE="$(basename $0) [-h]"
+    printf "\n%s\n%s\n" "Usage:" "    $USAGE"
+}
+
+# Show help
+function show_help() {
+    show_usage
+
+    printf "\n%s\n\n" "Rename FLAC files based on their tags."
+    printf "%s\n" "OPTIONS:"
+    printf "%s\n" "    -h         Show this help and exit"
+
+    printf "\n%s\n%s\n\n" \
+           "For bug report and info: riccardo.finotello@gmail.com" \
+           "Copyright (c) 2020 - Riccardo Finotello - MIT License"
+}
+
+# Parse options
+while getopts ":h" opt; do
+    case $opt in
+      h)
+          show_help
+          exit 0
+          ;;
+      \?)
+          printf "%s\n" "Invalid option: -$OPTARG." >&2
+          show_usage
+          exit 1
+          ;;
+      :)
+          printf "%s\n" "-$OPTARG requires an argument." >&2
+          show_usage
+          exit 1
+          ;;
+    esac
+done
+
+# Check if FLAC is installed
+[[ -x $(which flac) ]] || exit 1
+
+# ------------------------------------
+# COMMANDS AND INFO
+# ------------------------------------
+[[ -z $* ]] && (show_help && exit 1)
+
+for f in $@
+do
+    TITLE=$(metaflac --show-tag=TITLE $f| sed 's/.*=//g')
+    TRACK=$(metaflac --show-tag=TRACKNUMBER $f| sed -e 's/.*=//g' -e 's/\([1-9]\)/0\1/g')
+    DISC=$(metaflac --show-tag=DISCNUMBER $f| sed -e 's/.*=//g' -e 's/\([1-9]\)/0\1/g')
+    mv "$f" "${DISC}${TRACK}_${TITLE}.${f##*.}"
+done
+
+# vim: ft=sh
