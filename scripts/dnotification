@@ -53,28 +53,38 @@ function show_help() {
 
 # Start notifications
 function start_notifications() {
-    # systemctl --user start dunst.service
     killall -SIGUSR2 dunst
+
+    # print state to file
+    [[ -d $XDG_DATA_HOME ]] && FILE=$XDG_DATA_HOME/dnotification \
+                            || FILE=~/.dnotification
+    echo "1" > $FILE
 }
 
 # Stop notifications
 function stop_notifications() {
-    # systemctl --user stop dunst.service
     killall -SIGUSR1 dunst
+
+    # print state to file
+    [[ -d $XDG_DATA_HOME ]] && FILE=$XDG_DATA_HOME/dnotification \
+                            || FILE=~/.dnotification
+    echo "0" > $FILE
 }
 
 # Toggle notifications
 function toggle_notifications() {
-    [[ $(systemctl --user is-active dunst.service) == 'active' ]] \
-        && stop_notifications \
-        || start_notifications
+    [[ -f $XDG_DATA_HOME/dnotification ]] && FILE=$XDG_DATA_HOME/dnotification \
+                                          || FILE=~/.dnotification
+
+    [[ $(cat $FILE) -gt 0 ]] && stop_notifications || start_notifications
 }
 
 # Read notifications
 function read_notifications() {
-    [[ $(systemctl --user is-active dunst.service) == 'active' ]] \
-        && echo -e "\ufba0 ON" \
-        || echo -e "\ufba1 OFF"
+    [[ -f $XDG_DATA_HOME/dnotification ]] && FILE=$XDG_DATA_HOME/dnotification \
+                                          || FILE=~/.dnotification
+
+    [[ $(cat $FILE) -gt 0 ]] && echo -e "\ufba0 ON" || echo -e "\ufba1 OFF"
 }
 
 # Parse options
