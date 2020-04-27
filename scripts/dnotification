@@ -53,12 +53,14 @@ function show_help() {
 
 # Start notifications
 function start_notifications() {
-    systemctl --user start dunst.service
+    # systemctl --user start dunst.service
+    killall -SIGUSR2 dunst
 }
 
 # Stop notifications
 function stop_notifications() {
-    systemctl --user stop dunst.service
+    # systemctl --user stop dunst.service
+    killall -SIGUSR1 dunst
 }
 
 # Toggle notifications
