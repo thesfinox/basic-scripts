@@ -63,7 +63,7 @@ while getopts ":hiyw" opt; do
 
           tac $HST| dmenu -i -l 20 -p "Web search (Enter to select, Shift+Enter for new query): "| \
               tee -a $HST| \
-              xargs -r -I{} $URLOPEN --new-window \
+              xargs -r -I{} $URLOPEN \
               "https://duckduckgo.com/?q={}"
 
           TMP=$(tac $HST| uniq -i) && [[ $TMP ]] && echo -e "$TMP" > $HST
@@ -76,7 +76,7 @@ while getopts ":hiyw" opt; do
 
           tac $HST| dmenu -i -l 20 -p "Youtube search (Enter to select, Shift+Enter for new query): "| \
               tee -a $HST| \
-              xargs -r -I{} $URLOPEN --new-window \
+              xargs -r -I{} $URLOPEN \
               "https://www.youtube.com/results?search_query={}"
 
           TMP=$(tac $HST| uniq -i) && [[ $TMP ]] && echo -e "$TMP" > $HST
@@ -89,7 +89,7 @@ while getopts ":hiyw" opt; do
 
           tac $HST| dmenu -i -l 20 -p "Wikipedia search (Enter to select, Shift+Enter for new query): "| \
               tee -a $HST| \
-              xargs -r -I{} $URLOPEN --new-window \
+              xargs -r -I{} $URLOPEN \
               "https://wikipedia.org/w/index.php?search={}"
 
           TMP=$(tac $HST| uniq -i) && [[ $TMP ]] && echo -e "$TMP" > $HST

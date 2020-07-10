@@ -1,0 +1,5 @@
+#! /usr/bin/env bash
+
+NUM=$(notmuch count tag:unread AND tag:inbox)
+
+[[ $NUM -gt 0 ]] && echo -e "\ufbcd New Mail ($NUM unread)" || echo -e "\uf6ed No New Mail"

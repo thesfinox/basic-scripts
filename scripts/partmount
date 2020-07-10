@@ -1,0 +1,319 @@
+#! /usr/bin/env bash
+
+#
+# Mount/Unmount devices.
+#
+# This script implements an X11 menu interface to mount and unmount
+# devices and Android phones/tablets. It uses udisksctl as a backend and
+# simple-mtpfs for Android devices.
+#
+# Author:     Riccardo Finotello
+# E-mail:     riccardo.finotello@gmail.com
+#
+# Copyright:  2019 - Alessandra Cappati and Riccardo Finotello
+# License:    MIT License
+#
+
+# ------------------------------------
+# OPTIONS, HELP, USAGE AND CHECKS
+# ------------------------------------
+
+# Show usage
+function show_usage() {
+  USAGE="$(basename $0) [-h] [-b CMD] [-a CMD]"
+  printf "\n%s\n%s\n" "Usage:" "    $USAGE"
+}
+
+# Show help
+function show_help() {
+  show_usage
+
+  printf "\n%s\n\n" "Mount/Unmount devices."
+  printf "%s\n" "OPTIONS:"
+  printf "%s\n" "    -h            Show this help and exit"
+  printf "%s\n" "    -b CMD        Mount/Unmount block devices"
+  printf "%s\n" "    -a CMD        Mount/Unmount Android devices"
+  printf "\n%s\n" "CMD:"
+  printf "%s\n" "    m or mount    Mount partition/device"
+  printf "%s\n" "    u or unmount  Mount partition/device"
+
+  printf "\n%s\n%s\n\n" \
+    "For bug report and info: riccardo.finotello@gmail.com" \
+    "Copyright (c) 2019 - Alessandra Cappati and Riccardo Finotello - MIT License"
+}
+
+# Check if the X11 menu is installed
+if [[ ! -z $(which dmenu) ]]; then
+  XMENU=$(which dmenu)
+else
+  printf "%s\n%s\n%s\n" \
+    "The X11 menu is not in the PATH." \
+    "You might want to install it. E.g.: sudo apt install dmenu." \
+    "The script entirely relies on its presence." >&2
+  exit 1
+fi
+
+# Check if the notification client is installed
+if [[ ! -z $(which notify-send) ]]; then
+  NOTIFICATIONS=$(which notify-send)
+else
+  printf "%s\n%s\n%s\n" \
+    "The notification client is not in the PATH." \
+    "You might have to install it. E.g.: sudo apt install ruby-notify." \
+    "Some of the functionalities of this script may be compromised otherwise." >&2
+fi
+
+# Check presence of lsblk command and MTP tools
+if [[ ! -z $(which lsblk) ]]; then
+  LSBLK=$(which lsblk)
+else
+  printf "%s\n" \
+    "We could not find a way to display available partitions." >&2
+  exit 1
+fi
+
+if [[ -x $(which udisksctl) ]]; then
+  MNT=$(which udisksctl)
+else
+  printf "%s\n%s\n%s\n" \
+    "The udisksctl command is not in the PATH." \
+    "You might have to install it. E.g.: sudo apt install udisks2." \
+    "The script will not work without it." >&2
+  exit 1
+fi
+
+if [[ ! -z $(which simple-mtpfs) ]]; then
+  MTPDETECT=$(which simple-mtpfs)
+else
+  printf "%s\n%s\n%s\n" \
+    "We could not find a way to display available partitions." \
+    "You might want to install simple-mtpfs from the AUR repository." \
+    "Some of the functionalities will not be available." >&2
+fi
+
+# Check if the JSON parser is installed
+if [[ ! -z $(which jq) ]]; then
+  JQ=$(which jq)
+else
+  printf "%s\n%s\n%s\n" \
+    "The JSON parser is not in the PATH." \
+    "You might have to install it. E.g.: sudo apt install jq" \
+    "The JSON parser JQ is required for this script to work." >&2
+  exit 1
+fi
+
+# Check if file manager is installed
+if [[ ! -z $(which ranger) ]]; then
+  FM=$(which ranger)
+elif [[ ! -z $(which mc) ]]; then
+  FM=$(which mc)
+else
+  printf "%s\n%s\n%s\n" \
+    "We could not find a file manager." \
+    "You might want to install one. E.g.: sudo apt ranger." \
+    "Some of the functionalities might be compromised." >&2
+fi
+
+# Display block devices
+function display_block_devices() {
+  DEVS=$($LSBLK -pJo "name,size,label,mountpoint")
+  MOUNTABLE=$(echo $DEVS | \
+    $JQ '.blockdevices')
+  LENGTH=$(echo $MOUNTABLE | $JQ 'length')
+
+  TOTALCHILDREN=0
+
+  for counter in $(seq 1 $LENGTH); do
+    if [[ $1 == "mount" ]]; then
+      CHILD=$(echo $MOUNTABLE | $JQ ".[$(( counter - 1 ))].children | map(select( .mountpoint == null ))")
+    elif [[ $1 == "unmount" ]]; then
+      CHILD=$(echo $MOUNTABLE | $JQ ".[$(( counter - 1 ))].children | map(select( .mountpoint != null ))")
+    else
+      printf "%s\n" "Invalid argument: $1 is not a valid command." >&2
+      exit 1
+    fi
+    CHILDLENGTH=$(echo $CHILD | $JQ 'length')
+
+    for counter in $(seq 1 $CHILDLENGTH); do
+      MOUNT=$(echo $CHILD | $JQ ".[$(( counter - 1 ))]")
+      DEV=$(echo $MOUNT | $JQ ".name" | tr -d '"')
+      SIZE=$(echo $MOUNT | $JQ ".size" | tr -d '"')
+      LABEL=$(echo $MOUNT | $JQ ".label")
+
+      if [[ ! $DEV =~ .*nvme.* ]]; then
+        ENTRIES+="$LABEL $SIZE $DEV\n"
+        TOTALCHILDREN=$(( TOTALCHILDREN + 1 ))
+      fi
+
+    done
+  done
+
+  ENTRIES=$(echo $ENTRIES | sed 's/$/Abort/g')
+  
+  SELECTION=$(echo -e $ENTRIES | $XMENU \
+    -i -l 10 \
+    -p "Select block device: ")
+
+  echo $SELECTION
+}
+
+# Mount devices
+function mount_block_device() {
+  SELECTION=$(display_block_devices mount)
+
+  if [[ -z $SELECTION ]] || [[ $SELECTION == "Abort" ]]; then
+    exit 1
+  else
+    LABEL=$(echo $SELECTION | awk -F '"' '{print $2}')
+    MOUNT=$(echo $SELECTION | awk '{print $NF}')
+    MSG=$($MNT mount -b $MOUNT)
+    if [[ $? == 0 ]]; then
+      $NOTIFICATIONS -a "partmount" "Mount block device" "$MSG"
+      DIRECTORY=$(echo $MSG | awk -F'at ' '{print $2}' | tr -d '.')
+      if [[ -x $(which st) ]]; then
+        $(which st) -e $FM "$DIRECTORY"
+      else
+        $TERMINAL -e $FM "$DIRECTORY"
+      fi
+    else
+      $NOTIFICATIONS -a "partmount" \
+        "Trying to mount block device" \
+        "Unable to mount $LABEL."
+    fi
+  fi
+}
+
+# Unount devices
+function unmount_block_device() {
+  SELECTION=$(display_block_devices unmount)
+
+  if [[ -z $SELECTION ]] || [[ $SELECTION == "Abort" ]]; then
+    exit 1
+  else
+    LABEL=$(echo $SELECTION | awk -F '"' '{print $2}')
+    MOUNT=$(echo $SELECTION | awk '{print $NF}')
+    MSG=$($MNT unmount -b $MOUNT)
+    if [[ $? == 0 ]]; then
+      $NOTIFICATIONS -a "partmount" "Unmount block device" "$MSG"
+    else
+      $NOTIFICATIONS -a "partmount" \
+        "Trying to unmount block device" \
+        "Unable to unmount $LABEL."
+    fi
+  fi
+}
+
+# Display Android devices
+function display_android_devices() {
+  CHOICE=$($MTPDETECT -l 2> /dev/null)
+  echo "$CHOICE" | $XMENU -i -l 10 -p "Choose Android device: "
+}
+
+# Mount Android devices
+function mount_android_device() {
+  CHOICE=$(display_android_devices)
+  NO=$(echo $CHOICE | awk -F ': ' '{print $1}')
+  DEV=$(echo $CHOICE | awk -F ': ' '{print $2}')
+
+  if [[ -z $CHOICE ]] || [[ $CHOICE == "Abort" ]]; then
+    exit 1
+  else
+    if [[ ! -d $HOME/mnt/android_$NO ]]; then
+      mkdir -p $HOME/mnt/android_$NO
+    fi
+    $MTPDETECT --device $NO $HOME/mnt/android_$NO 2> /dev/null
+    if [[ $? == 0 ]]; then
+      $NOTIFICATIONS -a "partmount" "Mounted Android device" "$DEV in $HOME/mnt/android_$NO"
+      $TERMINAL -e $FM "$HOME/mnt/android_$NO"
+    else
+      $NOTIFICATIONS -a "partmount" \
+        "Trying to mount Android device" \
+        "Unable to mount $DEV."
+    fi
+  fi
+}
+
+# Unmount Android devices
+function unmount_android_device() {
+  CHOICE=$(display_android_devices)
+  NO=$(echo $CHOICE | awk -F ': ' '{print $1}')
+  DEV=$(echo $CHOICE | awk -F ': ' '{print $2}')
+
+  if [[ -z $CHOICE ]] || [[ $CHOICE == "Abort" ]]; then
+    exit 1
+  else
+    $(which fusermount) -u $HOME/mnt/android_$NO
+    if [[ $? == 0 ]]; then
+      $NOTIFICATIONS -a "partmount" "Unmounted Android device" "$DEV from $HOME/mnt/android_$NO"
+      if [[ -d $HOME/mnt/android_$NO ]]; then
+        rm -rf $HOME/mnt/android_$NO
+      fi
+    else
+      $NOTIFICATIONS -a "partmount" \
+        "Trying to unmount Android device" \
+        "Unable to unmount $DEV."
+    fi
+  fi
+}
+
+# Parse options
+while getopts ":hb:a:" opt; do
+  case $opt in
+    h)
+      show_help
+      exit 0
+      ;;
+    b)
+      case $OPTARG in
+        m|mount)
+          mount_block_device
+          exit 0
+          ;;
+        u|unmount)
+          unmount_block_device
+          exit 0
+          ;;
+        *)
+          printf "%s\n" "Invalid argument: $OPTARG is not a good command." >&2
+          exit 1
+          ;;
+      esac
+      ;;
+    a)
+      case $OPTARG in
+        m|mount)
+          mount_android_device
+          exit 0
+          ;;
+        u|unmount)
+          unmount_android_device
+          exit 0
+          ;;
+        *)
+          printf "%s\n" "Invalid argument: $OPTARG is not a good command." >&2
+          exit 1
+          ;;
+      esac
+      ;;
+    \?)
+      printf "%s\n" "Invalid option: -$OPTARG." >&2
+      show_usage
+      exit 1
+      ;;
+    :)
+      printf "%s\n" "-$OPTARG requires an argument." >&2
+      show_usage
+      exit 1
+      ;;
+  esac
+done
+
+# ------------------------------------
+# COMMANDS AND INFO
+# ------------------------------------
+
+if [[ -z $1 ]]; then
+  show_help
+  exit 1
+fi
+

@@ -1,0 +1,44 @@
+#!/bin/sh
+
+COMM="notmuch --config=/home/riccardo/.config/notmuch/config"
+
+# check new tags
+$COMM new
+
+# tag all new messages inbox and unread
+$COMM tag +inbox +unread -deleted -new -archive -- tag:new
+
+# tag messages outside the bin as non delete
+$COMM tag -deleted -- NOT "folder:gmail/[Gmail]/Bin" AND \
+                      NOT "folder:eduunito/[Gmail]/Cestino" AND \
+                      NOT "folder:unito/[Gmail]/Cestino" AND \
+                      NOT "folder:infn/trash" AND \
+                      NOT "folder:yahoo/Trash" AND \
+                      NOT "folder:didasca/[Gmail]/Cestino"
+
+# tag all messages sent messages
+$COMM tag -new -unread -inbox -archive +sent -- "folder:gmail/[Gmail]/Sent" OR \
+                                                "folder:eduunito/[Gmail]/Posta inviata" OR \
+                                                "folder:unito/[Gmail]/Posta inviata" OR \
+                                                "folder:infn/trash" OR \
+                                                "folder:yahoo/Trash" OR \
+                                                "folder:didasca/[Gmail]/Posta inviata"
+
+# set deleted messages and remove inbox
+$COMM tag +deleted -new -inbox -archive -- "folder:gmail/[Gmail]/Bin" OR \
+                                           "folder:eduunito/[Gmail]/Cestino" OR \
+                                           "folder:unito/[Gmail]/Cestino" OR \
+                                           "folder:infn/trash" OR \
+                                           "folder:yahoo/Trash" OR \
+                                           "folder:didasca/[Gmail]/Cestino"
+
+# tag spam messages
+$COMM tag +spam -new -inbox -archive -- "folder:gmail/[Gmail]/Spam" OR \
+                                        "folder:eduunito/[Gmail]/Spam" OR \
+                                        "folder:unito/[Gmail]/Spam" OR \
+                                        "folder:infn/junk" OR \
+                                        "folder:yahoo/Bulk Mail" OR \
+                                        "folder:didasca/[Gmail]/Spam"
+
+# set archived messages where supported
+$COMM tag +archive -deleted -inbox -new -- "folder:yahoo/Archive"

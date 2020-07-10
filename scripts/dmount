@@ -54,7 +54,7 @@ function mount_block_device() {
           awk '/part $/ && !/nvme/ {$NF=""; print $0}'| \
           dmenu -i -l 10 -p 'Partition to mount: '| awk '{print $1}'| \
           xargs -r -I{} udisksctl mount -b {}| \
-          sed -e 's/^.*\/run\(.*\)[.]/\/run\1/g')
+          sed -e 's/^.*\/run\(.*\)/\/run\1/g')
 
     # handle error
     [[ $? != 0 ]] && notify-send \
@@ -71,7 +71,7 @@ function mount_block_device() {
                   "Partition mounted at $LOC."
 
     # open file explorer
-    ([[ $LOC ]] && [[ $FILEEXPLORER ]]) && $FILEEXPLORER "$LOC"
+    ([[ $LOC ]] && [[ $FILEEXPLORER ]]) && $FILEEXPLORER $LOC
 }
 
 # Mount Android device

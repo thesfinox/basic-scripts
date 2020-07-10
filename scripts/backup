@@ -1,0 +1,161 @@
+#! /usr/bin/env bash 
+#
+# Backup you directory with Duplicity.
+#
+# This is a simple script to backup your data using Duplicity
+# (e.g.: sudo pacman -Syu duplicity). It is supposed to be a
+# (weekly) cronjob to backup the home directory of the current
+# user, encrypt it with an encryption key and them sync it
+# with a WebDAV service like Nextcloud or Owncloud.
+#
+# You first need to set up two files inside ~/.config/dupbackup:
+#     - $SERVER: it contains the information on the server
+#         - DEST: the URL of the WebDAV connetion
+#         - USR:  the username of the service
+#         - PSW:  the password relative to the username
+#         - DIR:  the directory to backup
+#         - EXC:  directories to exclude (use one "--exclude $DIR/dir --exclude $DIR/dir2 etc.")
+#     - gpg-$SERVER: it contains the information on the GNUPG keys
+#         - KEY:  the ID of the encryption key to be used
+#         - PASSPHRASE: the password relative to the key
+#
+# This is free software released under the MIT License.
+#
+# For bug report or info contact Riccardo Finotello through
+# the page on Gitlab: https://gitlab.com/thesfinox/dup-backup
+# 
+# Any help in improving the code is much appreciated.
+#
+# Author:    Riccardo Finotello
+# E-mail:    riccardo.finotello@gmail.com
+#
+# Copyright: 2019 - Riccardo Finotello
+# License:   MIT License
+#
+
+# ----------------------------------
+# OPTIONS, HELP, USAGE AND CHECKS
+# ----------------------------------
+
+# Show usage
+function show_usage() {
+  USAGE="$(basename $0) [-h] [-d [-s NAME] [-f|-i] [-l AGE]]"
+  printf "\n%s\n%s\n" "Usage:" "    $USAGE"
+}
+
+# Show help
+function show_help() {
+  show_usage
+
+  printf "\n%s\n\n" "Backup your directory with Duplicity."
+  printf "%s\n" "OPTIONS:"
+  printf "%s\n" "    -h       Show this help and exit"
+  printf "%s\n" "    -s NAME  Set server name (same as in ~/.config/dupbackup)"
+  printf "%s\n" "    -d       Enable dry-run (debug mode)"
+  printf "%s\n" "    -f       Set full backup"
+  printf "%s\n" "    -i       Set incremental backup"
+  printf "%s\n" "    -l AGE   Delete backups older than AGE (see duplicity(1))"
+
+  printf "\n%s\n%s\n\n" \
+    "For bug report and info: https://gitlab.com/thesfinox/dup-backup" \
+    "Copyright (c) 2019 - Riccardo Finotello - MIT License"
+}
+
+# Parse options
+while getopts ":hs:dfil:" opt; do
+  case $opt in
+    h)
+      show_help
+      exit 0
+      ;;
+    s)
+      SERVER=$OPTARG
+      ;;
+    d)
+      DRY_RUN="--dry-run"
+      ;;
+    f)
+      if [[ -n $TYPE ]]; then
+        printf "%s\n" "TYPE is already set." >&2
+      else
+        TYPE="full"
+      fi
+      ;;
+    i)
+      if [[ -n $TYPE ]]; then
+        printf "%s\n" "TYPE is already set." >&2
+      else
+        TYPE="incremental"
+      fi
+      ;;
+    l)
+      FULL=$OPTARG
+      ;;
+    \?)
+      printf "%s\n" "Invalid option: $OPTARG." >&2
+      show_usage
+      exit 1
+      ;;
+    :)
+      printf "%s\n" "-$OPTARG requires an argument." >&2
+      show_usage
+      exit 1
+      ;;
+  esac
+done
+
+if [[ ! -n $SERVER ]]; then
+  printf "%s\n" "Server is not set. You must select a destination server." >&2
+  exit 1
+fi
+
+if [[ ! -n $TYPE ]]; then
+  printf "%s\n" "Type was not set. Defaulting to FULL." >&2
+  TYPE="full"
+fi
+
+if [[ ! -n $FULL ]]; then
+  printf "%s\n" "Maximum age was not set. Defaulting to 3 months." >&2
+  FULL="3M"
+fi
+
+DUP_CONFIG=$HOME/.config/dupbackup
+
+# CA certificates (needed for WebDAV) - Ubuntu location
+SSL="/etc/ssl/certs/ca-certificates.crt"
+
+# Server and GPG definitions
+if [[ -d $DUP_CONFIG ]]; then
+  if [[ -f $DUP_CONFIG/$SERVER ]]; then
+    source "$DUP_CONFIG/$SERVER"
+  else
+    printf "%s\n" "Server configuration is not set." >&2
+    exit 1
+  fi
+  if [[ -d $DUP_CONFIG ]]; then
+    source "$DUP_CONFIG/gpg-$SERVER"
+  else
+    printf "%s\n" "GPG configuration is not set." >&2
+    exit 1
+  fi
+else
+  printf "%s\n" \
+    "You must first set the configuration files." >&2
+  exit 1
+fi
+
+# Position of the executable
+if [[ -x $(which duplicity) ]]; then
+  DUP=$(which duplicity)
+fi
+
+# Full WebDAV destination
+DAV="webdavs://$USR:$PSW@$DEST"
+
+# New backup
+PASSPHRASE=$PASSPHRASE $DUP $TYPE $DRY_RUN --asynchronous-upload --full-if-older-than $FULL --ssl-cacert-file $SSL --encrypt-sign-key $KEY "$EXC" "$DIR" "$DAV"
+
+# Remove old backups
+PASSPHRASE=$PASSPHRASE $DUP --force remove-older-than $FULL $DRY_RUN --ssl-cacert-file $SSL --encrypt-sign-key $KEY "$DAV"
+
+unset KEY PASSHPRASE SIGN_PASSPHRASE DEST USR PSW DIR EXC

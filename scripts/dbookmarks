@@ -62,7 +62,7 @@ while getopts ":hem" opt; do
       m)
         cat $LIST| sort| column -t -s'^^^'| \
             dmenu -i -l 20 -p 'Web bookmarks: '| awk '{print $NF}'| \
-            xargs -r $BROWSER --new-window
+            xargs -r $BROWSER
         exit 0
         ;;
       \?)
